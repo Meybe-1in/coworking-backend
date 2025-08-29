@@ -21,10 +21,10 @@ Este documento describe la arquitectura técnica del sistema, los componentes, e
 
 ```mermaid
 flowchart LR
-    Client[Cliente (Browser)] -->|HTTP/HTTPS| NGINX[(NGINX \n Reverse Proxy)]
-    NGINX -->|/| FE[Frontend: React (estático)]
+    Client[Cliente Browser] -->|HTTP or HTTPS| NGINX[(NGINX <br/> Reverse Proxy)]
+    NGINX -->|/| FE[Frontend: React estatico]
     NGINX -->|/api| BE[Backend: Spring Boot]
-    BE -->|JPA/Hibernate| DB[(PostgreSQL)]
+    BE -->|JPA-Hibernate| DB[(PostgreSQL)]
 
     subgraph Docker Network
       FE --- BE
