@@ -21,6 +21,7 @@ import java.sql.Connection;
 @ActiveProfiles("test")
 class DataSourceContainerTest {
 
+    @SuppressWarnings("resource")
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
             .withDatabaseName("testdb")
@@ -28,6 +29,7 @@ class DataSourceContainerTest {
             .withPassword("testpass")
             .withReuse(true);
 
+    @SuppressWarnings("unused")
     @DynamicPropertySource
     static void registerDataSourceProps(DynamicPropertyRegistry registry) {
         // Spring usará estos valores en lugar de application.yml
