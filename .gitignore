@@ -8,6 +8,10 @@ target/
 *.war
 *.log
 
+# Build
+/target/
+/build/
+
 ### STS ###
 .apt_generated
 .classpath
@@ -35,5 +39,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Env
+.env
 
 
