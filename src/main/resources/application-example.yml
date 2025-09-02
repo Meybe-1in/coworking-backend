@@ -1,0 +1,10 @@
+# Base de datos de ejemplo (PostgreSQL)
+spring.datasource.url=jdbc:postgresql://localhost:5432/mi_base
+spring.datasource.username=usuario
+spring.datasource.password=contraseña
+  
+  # Puerto de la aplicación
+server.port=8080
+  
+  # JWT o claves falsas
+jwt.secret=miClaveDeEjemplo123
