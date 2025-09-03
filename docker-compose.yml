@@ -1,5 +1,19 @@
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_container
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - postgres
+    networks:
+      - coworking-net
+
   postgres:
     image: postgres:15
     container_name: postgres_container
@@ -9,6 +23,8 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coworking-net
 
   pgadmin:
     image: dpage/pgadmin4
@@ -21,6 +37,12 @@ services:
       - "8081:80"
     depends_on:
       - postgres
+    networks:
+      - coworking-net
 
 volumes:
   postgres_data:
+
+networks:
+  coworking-net:
+    driver: bridge
