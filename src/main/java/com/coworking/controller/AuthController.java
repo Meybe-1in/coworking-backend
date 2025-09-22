@@ -2,12 +2,18 @@ package com.coworking.controller;
 
 
 import com.coworking.dto.AuthRequest;
+import com.coworking.dto.AuthResponse;
 import com.coworking.security.JwtUtil;
 import com.coworking.model.Role;
 import com.coworking.model.User;
 import com.coworking.repository.RoleRepository;
 import com.coworking.repository.UserRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +23,7 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "Endpoint para registro y login de usuarios")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -35,6 +42,14 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(
+            summary = "Registrar usuarios",
+            description = "Crea nuevo usuario con rol ROLE_USER",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Usuario registrado"),
+                    @ApiResponse(responseCode = "400", description = "Usuario ya existe", content = @Content)
+            }
+    )
     public String register(@RequestBody AuthRequest request){
         if (userRepository.findByUsername(request.getUsername()).isPresent()){
             return  "Usuario ya existe";
@@ -52,7 +67,17 @@ public class AuthController {
         return "Usuario registrado";
     }
 
+
     @PostMapping("/login")
+    @Operation(
+            summary = "Login de usuario",
+            description = "Autentica un usuario y devuelve un JWT",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "JWT generado" ,
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                    @ApiResponse(responseCode = "401", description = "Credenciales invalidas", content = @Content)
+            }
+    )
     public String login(@RequestBody AuthRequest request){
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword())
