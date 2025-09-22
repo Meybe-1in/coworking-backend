@@ -1,0 +1,5 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop   # DB limpia para cada suite de tests
+    show-sql: true
