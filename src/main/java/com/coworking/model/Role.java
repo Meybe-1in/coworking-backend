@@ -1,6 +1,26 @@
 package com.coworking.model;
 
-public enum Role {
-    USER,
-    ADMIN
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@Entity
+@Table(name = "roles")
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String name;
+
+    public Role() {
+    }
+
+    public Role(String name) { this.name = name; }
+
+
 }
