@@ -35,30 +35,19 @@ public class ReservationService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         LocalDateTime start = request.getStartAt();
-        LocalDateTime end = request.getEndAt();
-
-        //validaciones
-        if (!start.isBefore(end)) throw new
-                ReservationConflictException("La hora de inicio debe ser anterior a la hora de fin");
-
-        if (start.toLocalTime().isBefore(LocalTime.of(8,0)) ||
-                end.toLocalTime().isAfter(LocalTime.of(20, 0)))
-            throw new ReservationConflictException("Las reservas deben estar entre 08:00 y 20:00");
-
-        if (end.minusHours(8).isAfter(start))
-            throw new ReservationConflictException("La duración máxima de una reserva es de 8 horas");
+        LocalDateTime end = getLocalDateTime(request, start);
 
 
         //verificacion de cruce de horarios
 
         List<Reservation> overlapping =reservationRepository
-                .findByRoomIdAndStartAtLessThanEndAtGreaterThan(room.getId(), end, start);
+                .findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(room.getId(), end, start);
 
         if (!overlapping.isEmpty())
             throw  new ReservationConflictException("La sala ya está reservada en ese horario");
 
         // verificacion de reserva duplicada
-        if (reservationRepository.findByIdAndRoomIdStartAtAndEndAt(user.getId(), room.getId(), start , end).isPresent())
+        if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start , end).isPresent())
             throw new ReservationConflictException("Ya tienes una reserva igual");
 
 
@@ -75,6 +64,22 @@ public class ReservationService {
 
 
 
+    }
+
+    private static LocalDateTime getLocalDateTime(ReservationRequest request, LocalDateTime start) {
+        LocalDateTime end = request.getEndAt();
+
+        //validaciones
+        if (!start.isBefore(end)) throw new
+                ReservationConflictException("La hora de inicio debe ser anterior a la hora de fin");
+
+        if (start.toLocalTime().isBefore(LocalTime.of(8,0)) ||
+                end.toLocalTime().isAfter(LocalTime.of(20, 0)))
+            throw new ReservationConflictException("Las reservas deben estar entre 08:00 y 20:00");
+
+        if (end.minusHours(8).isAfter(start))
+            throw new ReservationConflictException("La duración máxima de una reserva es de 8 horas");
+        return end;
     }
 
     private ReservationResponse mapToResponse(Reservation reservation) {

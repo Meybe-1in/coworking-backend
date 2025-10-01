@@ -10,12 +10,17 @@ import java.util.Optional;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     //verificar si se cruzan horarios
-    List<Reservation> findByRoomIdAndStartAtLessThanEndAtGreaterThan(
-            Long roomId, LocalDateTime end, LocalDateTime start
+    List<Reservation> findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+            Long roomId,
+            LocalDateTime end,
+            LocalDateTime start
     );
 
    //verificar si tiene reserva identica
-    Optional<Reservation> findByIdAndRoomIdStartAtAndEndAt(
-            Long userId, Long roomId, LocalDateTime start, LocalDateTime end
-    );
+   Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAt(
+           Long userId,
+           Long roomId,
+           LocalDateTime start,
+           LocalDateTime end
+   );
 }
