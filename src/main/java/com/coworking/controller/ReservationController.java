@@ -2,10 +2,12 @@ package com.coworking.controller;
 
 import com.coworking.dto.ReservationRequest;
 import com.coworking.dto.ReservationResponse;
+import com.coworking.repository.UserRepository;
 import com.coworking.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -17,17 +19,23 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final UserRepository userRepository;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService, UserRepository userRepository) {
         this.reservationService = reservationService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
     @Operation(summary = "Crear una reserva (USER o ADMIN)")
     public ReservationResponse create(@Valid @RequestBody ReservationRequest request, Authentication auth) {
         // auth.getName() nos da el username del usuario autenticado
-        Long userId = 1L; // 🔹 Temporal, luego lo obtendremos del userRepository usando auth.getName()
-        return reservationService.createReservation(userId, request);
+      String username = auth.getName();
+      Long userId = userRepository.findByUsername(username)
+              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " +username))
+              .getId();
+
+    return reservationService.createReservation(userId, request);
     }
 
     @GetMapping
