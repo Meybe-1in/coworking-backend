@@ -47,7 +47,7 @@ class ReservationServiceTest {
 
         user = new User();
         user.setId(1L);
-        user.setUsername("dayana");
+        user.setEmail("p1@email.com");
 
         room = new Room();
         room.setId(2L);
@@ -87,7 +87,7 @@ class ReservationServiceTest {
         // Then
         assertNotNull(response);
         assertEquals("Sala A", response.getRoomName());
-        assertEquals("dayana", response.getUsername());
+        assertEquals("p1@email.com", response.getUsername());
         assertEquals(ReservationStatus.CONFIRMED, response.getStatus());
         verify(reservationRepository, times(1)).save(any(Reservation.class));
     }
