@@ -86,7 +86,7 @@ public class ReservationService {
         ReservationResponse dto = new ReservationResponse();
         dto.setId(reservation.getId());
         dto.setRoomName(reservation.getRoom().getName());
-        dto.setUsername(reservation.getUser().getUsername());
+        dto.setUsername(reservation.getUser().getEmail());
         dto.setStartAt(reservation.getStartAt());
         dto.setEndAt(reservation.getEndAt());
         dto.setStatus(reservation.getStatus());
