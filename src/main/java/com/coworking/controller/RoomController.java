@@ -9,11 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.plaf.SeparatorUI;
 import java.util.List;
 
 @RestController
 @RequestMapping("api/rooms")
+@CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Rooms", description = "Gestion de salas de coworking")
 @AllArgsConstructor
 public class RoomController {
