@@ -31,8 +31,8 @@ public class ReservationController {
     public ReservationResponse create(@Valid @RequestBody ReservationRequest request, Authentication auth) {
         // auth.getName() nos da el username del usuario autenticado
       String username = auth.getName();
-      Long userId = userRepository.findByUsername(username)
-              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " +username))
+      Long userId = userRepository.findByEmail(username)
+              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username))
               .getId();
 
     return reservationService.createReservation(userId, request);
@@ -45,7 +45,7 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar una reserva (solo ADMIN o dueño)")
+    @Operation(summary = "Eliminar una reserva (solo ADMIN)")
     public void delete(@PathVariable Long id) {
         reservationService.deleteReservation(id);
     }
