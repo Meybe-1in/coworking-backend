@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Table(name = "rooms")
 @Getter @Setter
@@ -26,5 +28,10 @@ public class Room {
 
     private boolean available = true;
 
+    private Double price;
+    private String imageUrl;
+    @ElementCollection
+    private List<String> features;
+    private String location;
 
 }

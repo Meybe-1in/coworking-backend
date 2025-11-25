@@ -3,6 +3,8 @@ package com.coworking.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class RoomDto {
 
@@ -20,4 +22,16 @@ public class RoomDto {
 
     @Schema(description = "Disponibilidad actual", example = "true")
     private boolean available;
+
+    @Schema(description = "Precio por hora", example = "5.0")
+    private Double price;
+
+    @Schema(description = "URL de imagen", example = "https://example.com/room.jpg")
+    private String imageUrl;
+
+    @Schema(description = "Ubicación de la sala", example = "Barrio La Cruz, Usulután, El Salvador")
+    private String location;
+
+    @Schema(description = "Características de la sala", example = "[\"Wifi\", \"Silla ergonómica\"]")
+    private List<String> features;
 }
