@@ -1,5 +1,6 @@
 package com.coworking.controller;
 
+import com.coworking.dto.RoomAvailabilityResponse;
 import com.coworking.dto.RoomDto;
 import com.coworking.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,7 +9,10 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -34,13 +38,6 @@ public class RoomController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    //Crear
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Crear una nueva sala(solo ADMIN")
-    public ResponseEntity<RoomDto> createRoom(@RequestBody RoomDto dto){
-        return ResponseEntity.ok(roomService.createRoom(dto));
-    }
 
     //Actualizar
     @PostMapping("/{id}")
@@ -62,8 +59,31 @@ public class RoomController {
                 :ResponseEntity.notFound().build();
     }
 
+    //crear
+    @PostMapping(consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "crear sala con imagen agregada (solo ADMIN)")
 
+    public ResponseEntity<RoomDto> createRoom(
+            @RequestPart("room") RoomDto roomDto,
+            @RequestPart(value = "image", required = false) MultipartFile image){
+        RoomDto savedRoom = roomService.createRoom(roomDto, image);
+        return  ResponseEntity.ok(savedRoom);
+    }
 
+    @GetMapping("/available")
+    public ResponseEntity<List<RoomAvailabilityResponse>> getAvailableRooms(
+            @RequestParam String date,
+            @RequestParam String start,
+            @RequestParam String end,
+            @RequestParam Integer people
+    ){
+        LocalDate d = LocalDate.parse(date);
+        LocalTime s = LocalTime.parse(start);
+        LocalTime e = LocalTime.parse(end);
 
+        List<RoomAvailabilityResponse> available = roomService.findAvailableRooms(d, s, e, people);
+        return ResponseEntity.ok(available);
+    }
 
 }
