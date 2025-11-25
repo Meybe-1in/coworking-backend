@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,6 +60,7 @@ public class AuthController {
         }
 
         User user = new User();
+        user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
@@ -99,5 +101,37 @@ public class AuthController {
                         .build()
         );
         return new AuthResponse(token);
+    }
+    //admin
+    @PostMapping("/admin/register")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Registrar administradores",
+            description = "Crea un nuevo usuario con rol ROLE_ADMIN (solo accesible para usuarios con rol ADMIN)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Administrador registrado correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Correo ya existe", content = @Content),
+                    @ApiResponse(responseCode = "403", description = "No autorizado (solo ADMIN puede crear otro ADMIN)", content = @Content)
+            }
+    )
+    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody AuthRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("message", "Correo ya existe"));
+        }
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        // Buscar el rol ADMIN en la base de datos
+        Role roleAdmin = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
+
+        user.setRoles(Set.of(roleAdmin));
+
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", "Administrador registrado correctamente"));
     }
 }
