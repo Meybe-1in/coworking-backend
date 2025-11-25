@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservations")
+@CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Reservas", description = "Gestión de reservas de salas")
 public class ReservationController {
 
