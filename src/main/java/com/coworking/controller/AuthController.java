@@ -1,6 +1,4 @@
 package com.coworking.controller;
-
-
 import com.coworking.dto.AuthRequest;
 import com.coworking.dto.AuthResponse;
 import com.coworking.security.JwtUtil;
@@ -14,15 +12,19 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Set;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Authentication", description = "Endpoint para registro y login de usuarios")
 public class AuthController {
 
@@ -47,16 +49,19 @@ public class AuthController {
             description = "Crea nuevo usuario con rol ROLE_USER",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Usuario registrado"),
-                    @ApiResponse(responseCode = "400", description = "Usuario ya existe", content = @Content)
+                    @ApiResponse(responseCode = "400", description = "Correo ya existe", content = @Content)
             }
     )
-    public String register(@RequestBody AuthRequest request){
-        if (userRepository.findByUsername(request.getUsername()).isPresent()){
-            return  "Usuario ya existe";
+    public ResponseEntity<Map<String, String>> register(@RequestBody AuthRequest request){
+        if (userRepository.findByEmail(request.getEmail()).isPresent()){
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("message", "Correo ya existe"));
         }
 
         User user = new User();
         user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         Role roleUser = roleRepository.findByName("ROLE_USER")
@@ -64,7 +69,7 @@ public class AuthController {
         user.setRoles(Set.of(roleUser));
 
         userRepository.save(user);
-        return "Usuario registrado";
+        return ResponseEntity.ok(Map.of("message", "Usuario registrado correctamente"));
     }
 
 
@@ -78,22 +83,55 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Credenciales invalidas", content = @Content)
             }
     )
-    public String login(@RequestBody AuthRequest request){
+    public AuthResponse login(@RequestBody AuthRequest request){
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getEmail(),request.getPassword())
         );
 
         // crea usuario con su rol de usuario
-        User user = userRepository.findByUsername(request.getUsername())
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         // devolver un jwt
-        return jwtUtil.generateToken(
+        String token = jwtUtil.generateToken(
                 org.springframework.security.core.userdetails.User
-                        .withUsername(user.getUsername())
+                        .withUsername(user.getEmail())
                         .password(user.getPassword())
                         .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
                         .build()
         );
+        return new AuthResponse(token);
+    }
+    //admin
+    @PostMapping("/admin/register")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Registrar administradores",
+            description = "Crea un nuevo usuario con rol ROLE_ADMIN (solo accesible para usuarios con rol ADMIN)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Administrador registrado correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Correo ya existe", content = @Content),
+                    @ApiResponse(responseCode = "403", description = "No autorizado (solo ADMIN puede crear otro ADMIN)", content = @Content)
+            }
+    )
+    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody AuthRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("message", "Correo ya existe"));
+        }
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        // Buscar el rol ADMIN en la base de datos
+        Role roleAdmin = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
+
+        user.setRoles(Set.of(roleAdmin));
+
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", "Administrador registrado correctamente"));
     }
 }

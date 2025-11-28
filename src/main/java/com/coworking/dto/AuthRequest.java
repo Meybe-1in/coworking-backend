@@ -8,8 +8,11 @@ import lombok.Setter;
 @Getter
 public class AuthRequest {
 
-    @Schema(description = "Nombre de usuario", example = "user1")
+    @Schema(description = "usuario", example = "leslie")
     private String username;
+
+    @Schema(description = "Correo electronico de usuario", example = "user1@gmail.com")
+    private String email;
 
     @Schema(description = "Contraseña del usuario", example = "12345678")
     private String password;

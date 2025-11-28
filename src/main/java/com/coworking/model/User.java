@@ -1,14 +1,17 @@
 package com.coworking.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Setter
-@Getter
+@Setter @Getter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class User {
@@ -19,6 +22,9 @@ public class User {
 
     @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(unique = true, nullable = false)
+    private String email;
     @Column(nullable = false)
     private String password;
 
@@ -30,15 +36,5 @@ public class User {
     )
 
     private Set<Role> roles = new HashSet<>();
-
-    public User() {
-    }
-
-    public User(Long id, String username, String password, Set<Role> roles) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.roles = roles;
-    }
 
 }

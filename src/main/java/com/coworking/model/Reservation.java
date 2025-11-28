@@ -1,0 +1,42 @@
+package com.coworking.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "reservations")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Reservation {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "room_id")
+    private Room room;
+
+    @JoinColumn(name = "user_id")
+    @ManyToOne(optional = false)
+    private User user;
+
+    @Column(nullable = false)
+    private LocalDateTime startAt;
+
+    @Column(nullable = false)
+    private LocalDateTime endAt;
+
+    private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReservationStatus status = ReservationStatus.PENDING;
+
+}
