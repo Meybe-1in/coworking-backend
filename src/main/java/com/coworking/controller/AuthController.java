@@ -171,8 +171,8 @@ public class AuthController {
         }
 
         User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
 
         // Buscar el rol ADMIN en la base de datos
         Role roleAdmin = roleRepository.findByName("ROLE_ADMIN")
