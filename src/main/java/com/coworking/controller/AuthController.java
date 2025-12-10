@@ -1,6 +1,7 @@
 package com.coworking.controller;
-import com.coworking.dto.AuthRequest;
 import com.coworking.dto.AuthResponse;
+import com.coworking.dto.LoginRequest;
+import com.coworking.dto.RegisterRequest;
 import com.coworking.security.JwtUtil;
 import com.coworking.model.Role;
 import com.coworking.model.User;
@@ -12,10 +13,16 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,10 +71,7 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(role));
 
-        Role roleUser = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Rol USER no encontrado"));
-        user.setRoles(Set.of(roleUser));
-
+        // Guardar
         userRepository.save(user);
 
         //UserDetails contruir
@@ -91,13 +95,13 @@ public class AuthController {
     }
 
 
-    @PostMapping("/login")
+    //LOGIN
     @Operation(
             summary = "Login de usuario",
             description = "Autentica un usuario y devuelve un JWT",
             responses = {
                     @ApiResponse(responseCode = "200", description = "JWT generado" ,
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                            content = @Content(schema = @Schema(implementation = AuthResponse.class))),
                     @ApiResponse(responseCode = "401", description = "Credenciales invalidas", content = @Content)
             }
     )
@@ -108,9 +112,9 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
 
-        // crea usuario con su rol de usuario
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            // crea usuario con su rol de usuario
+            User user = userRepository.findByEmail(request.email())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             // pasamos objeto UserDetails
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
