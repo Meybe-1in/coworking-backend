@@ -53,6 +53,11 @@ public class AuthController {
                     .body(Map.of("message", "Correo ya existe"));
         }
 
+        // Obtener rol
+        Role role = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Role ROLE_USER no encontrado"));
+
+        // Crear usuario
         User user = new User();
         user.setUsername(request.username());
         user.setEmail(request.email());
