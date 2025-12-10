@@ -26,6 +26,7 @@ import java.util.Set;
 @RequestMapping("/auth")
 @CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Authentication", description = "Endpoint para registro y login de usuarios")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
