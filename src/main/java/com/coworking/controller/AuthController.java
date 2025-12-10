@@ -50,7 +50,7 @@ public class AuthController {
         if (userRepository.findByEmail(request.email()).isPresent()){
             return ResponseEntity
                     .badRequest()
-                    .body(Map.of("message", "Correo ya existe"));
+                    .body("Correo ya esta registrado");
         }
 
         // Obtener rol
