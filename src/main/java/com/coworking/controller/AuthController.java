@@ -112,15 +112,27 @@ public class AuthController {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // devolver un jwt
-        String token = jwtUtil.generateToken(
-                org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail())
-                        .password(user.getPassword())
-                        .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
-                        .build()
-        );
-        return new AuthResponse(token);
+            // pasamos objeto UserDetails
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            // Generar el token
+            String token = jwtUtil.generateToken(userDetails, user.getUsername());
+
+            //role
+            String role = userDetails.getAuthorities().stream()
+                    .findFirst()
+                    .map(GrantedAuthority::getAuthority) //.map(Role::getName)
+                    .orElse("ROLE_USER");
+
+            return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), role));
+
+        } catch (
+                BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Credenciales incorrectas"));
+        } catch (Exception e) {
+            // Esto imprimirá el error real en tu consola si vuelve a fallar
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error en el servidor: " + e.getMessage()));
+        }
     }
     //admin
     @PostMapping("/admin/register")
