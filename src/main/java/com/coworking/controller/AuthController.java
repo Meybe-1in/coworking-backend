@@ -134,6 +134,23 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error en el servidor: " + e.getMessage()));
         }
     }
+    //user
+    @GetMapping("/user")
+    public ResponseEntity<?> getUser(@RequestHeader("authorization") String header){
+        String token =header.replace("Bearer ", "");
+        String email = jwtUtil.extractUsername(token);
+        String username = jwtUtil.extractUsernameUi(token);
+
+        User user = userRepository.findByEmail(email).orElseThrow();
+
+        String role = user.getRoles().stream()
+                .findFirst()
+                .map(Role::getName)
+                .orElse("ROLE_USER");
+
+        return ResponseEntity.ok(new AuthResponse(token, username, role));
+    }
+
     //admin
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMIN')")
