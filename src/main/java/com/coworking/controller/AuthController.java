@@ -101,10 +101,12 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Credenciales invalidas", content = @Content)
             }
     )
-    public AuthResponse login(@RequestBody AuthRequest request){
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(),request.getPassword())
-        );
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
 
         // crea usuario con su rol de usuario
         User user = userRepository.findByEmail(request.getEmail())
