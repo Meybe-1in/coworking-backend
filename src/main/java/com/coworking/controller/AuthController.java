@@ -163,8 +163,8 @@ public class AuthController {
                     @ApiResponse(responseCode = "403", description = "No autorizado (solo ADMIN puede crear otro ADMIN)", content = @Content)
             }
     )
-    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody AuthRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody RegisterRequest request) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("message", "Correo ya existe"));
