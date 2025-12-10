@@ -69,7 +69,25 @@ public class AuthController {
         user.setRoles(Set.of(roleUser));
 
         userRepository.save(user);
-        return ResponseEntity.ok(Map.of("message", "Usuario registrado correctamente"));
+
+        //UserDetails contruir
+        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
+                .build();
+
+        // Generar token
+        String token = jwtUtil.generateToken(userDetails, user.getUsername());
+        // Obtener rol (primero)
+        String userRole = user.getRoles().stream()
+                .findFirst()
+                .map(Role::getName)
+                .orElse("ROLE_USER");
+
+        // Devolver JSON con token
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), userRole));
+
     }
 
 
