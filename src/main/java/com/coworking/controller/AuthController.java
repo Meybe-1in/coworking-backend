@@ -35,16 +35,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private  final JwtUtil jwtUtil;
 
-
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
-
-    @PostMapping("/register")
+    //REGISTER
     @Operation(
             summary = "Registrar usuarios",
             description = "Crea nuevo usuario con rol ROLE_USER",
