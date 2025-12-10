@@ -44,8 +44,10 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "Correo ya existe", content = @Content)
             }
     )
-    public ResponseEntity<Map<String, String>> register(@RequestBody AuthRequest request){
-        if (userRepository.findByEmail(request.getEmail()).isPresent()){
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
+
+        if (userRepository.findByEmail(request.email()).isPresent()){
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("message", "Correo ya existe"));
