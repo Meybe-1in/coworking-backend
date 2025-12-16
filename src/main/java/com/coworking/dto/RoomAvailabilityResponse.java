@@ -10,5 +10,4 @@ public class RoomAvailabilityResponse {
     private String location;
     private String imageUrl;
     private boolean available;
-
 }
