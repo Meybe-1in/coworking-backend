@@ -3,7 +3,7 @@ package com.coworking.service;
 import com.coworking.model.Role;
 import com.coworking.model.User;
 import com.coworking.repository.UserRepository;
-import org.hibernate.sql.ast.tree.from.CorrelatedTableGroup;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
