@@ -50,7 +50,7 @@ public class RoomController {
     }
 
     //eliminar
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Eliminar sala (solo ADMIN")
     public ResponseEntity<RoomDto> deleteRoom(@PathVariable Long id){
@@ -70,7 +70,6 @@ public class RoomController {
         RoomDto savedRoom = roomService.createRoom(roomDto, image);
         return  ResponseEntity.ok(savedRoom);
     }
-
     @GetMapping("/available")
     public ResponseEntity<List<RoomAvailabilityResponse>> getAvailableRooms(
             @RequestParam String date,
@@ -85,5 +84,4 @@ public class RoomController {
         List<RoomAvailabilityResponse> available = roomService.findAvailableRooms(d, s, e, people);
         return ResponseEntity.ok(available);
     }
-
 }
