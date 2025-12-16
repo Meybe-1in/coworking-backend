@@ -49,6 +49,31 @@ public class JwtUtil {
                 .getBody()
                 .getSubject();
     }
+    public String extractUsernameUi(String token){
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("username", String.class);
+    }
+    
+    private Date extractExpiration(String token){
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
+    }
+    
+    private boolean isTokenExpired(String token){
+        Date exp = extractExpiration(token);
+        return exp.before(new Date());
+    }
 
-
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
 }
