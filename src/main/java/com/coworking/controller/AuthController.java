@@ -54,6 +54,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request){
 
+        if (Boolean.FALSE.equals(request.termsAccepted())){
+            return ResponseEntity
+                    .badRequest()
+                    .body("Debe aceptar términos y condiciones");
+        }
+
         if (userRepository.findByEmail(request.email()).isPresent()){
             return ResponseEntity
                     .badRequest()
