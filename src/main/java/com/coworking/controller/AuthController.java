@@ -52,7 +52,7 @@ public class AuthController {
             }
     )
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
 
         if (Boolean.FALSE.equals(request.termsAccepted())){
             return ResponseEntity
