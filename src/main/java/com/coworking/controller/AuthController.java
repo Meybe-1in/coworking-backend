@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class AuthController {
             }
     )
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
 
         if (Boolean.FALSE.equals(request.termsAccepted())){
             return ResponseEntity
@@ -63,7 +64,10 @@ public class AuthController {
         if (userRepository.findByEmail(request.email()).isPresent()){
             return ResponseEntity
                     .badRequest()
-                    .body("Correo ya esta registrado");
+                    .body(Map.of(
+                            "field", "email",
+                            "message", "Correo ya está registrado"
+                    ));
         }
 
         // Obtener rol
@@ -112,7 +116,7 @@ public class AuthController {
             }
     )
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
