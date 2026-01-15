@@ -4,12 +4,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Map;
@@ -33,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 @WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
     @Autowired
@@ -63,7 +67,7 @@ public class AuthControllerTest {
         RegisterRequest request = new RegisterRequest(
                 "userTest",
                 "test@mail.com",
-                "12345678",
+                "Aa123456!",
                 true
         );
 
@@ -76,7 +80,7 @@ public class AuthControllerTest {
         Mockito.when(roleRepository.findByName("ROLE_USER"))
                 .thenReturn(Optional.of(role));
 
-        Mockito.when(passwordEncoder.encode("12345678"))
+        Mockito.when(passwordEncoder.encode("Aa123456!"))
                 .thenReturn("encodedPass");
 
         Mockito.when(jwtUtil.generateToken(any(), eq("userTest")))
@@ -147,8 +151,14 @@ public class AuthControllerTest {
 
         Mockito.when(jwtUtil.generateToken(any(), eq("loginUser")))
                 .thenReturn("jwt-login");
+        UserDetails springUser =
+                new org.springframework.security.core.userdetails.User(
+                        "login@mail.com",
+                        "encoded",
+                        List.of()
+                );
 
-        Mockito.when(authMock.getPrincipal()).thenReturn(user);
+        Mockito.when(authMock.getPrincipal()).thenReturn(springUser);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -170,5 +180,18 @@ public class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Credenciales incorrectas"));
     }
+
+    @Test
+    void shouldReturn400WhenPasswordIsWeak() throws Exception {
+        RegisterRequest request = new RegisterRequest("User", "email@test.com", "12345", true);
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("password"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
 
 }

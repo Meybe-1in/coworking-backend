@@ -70,6 +70,16 @@ public class AuthController {
                     ));
         }
 
+        //validacion de contrasenia fuerte
+        if(!request.password().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$")){
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of(
+                            "field" , "password",
+                            "message" , "La contraseña debe tener mínimo 8 caracteres, incluir mayúsculas, minúsculas, número y símbolo"
+                    ));
+        }
+
         // Obtener rol
         Role role = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Role ROLE_USER no encontrado"));
