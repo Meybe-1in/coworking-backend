@@ -155,7 +155,22 @@ public class AuthController {
     )
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try {
+        try{
+            // busca usuario
+            User user = userRepository.findByEmail(request.email())
+                    .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
+
+            //verifica usuario
+            if (!user.isEnabled()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                        Map.of(
+                                "code", "EMAIL_NOT_VERIFIED",
+                                "message", "Tu cuenta no ha sido verificada",
+                                "email", user.getEmail()
+                        )
+                );
+            }
+            // Autenticación
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
