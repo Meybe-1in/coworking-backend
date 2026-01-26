@@ -90,6 +90,7 @@ public class AuthController {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(role));
+        user.setEnabled(false);
 
         // Guardar
         userRepository.save(user);
