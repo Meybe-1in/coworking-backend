@@ -136,8 +136,9 @@ public class AuthController {
                 .map(Role::getName)
                 .orElse("ROLE_USER");
 
-        // Devolver JSON con token
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), userRole));
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String > request){
+        String email = request.get("email");
 
     }
 
