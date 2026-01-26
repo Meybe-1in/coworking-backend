@@ -2,17 +2,21 @@ package com.coworking.controller;
 import com.coworking.dto.AuthResponse;
 import com.coworking.dto.LoginRequest;
 import com.coworking.dto.RegisterRequest;
+import com.coworking.model.VerificationToken;
+import com.coworking.repository.VerificationTokenRepository;
 import com.coworking.security.JwtUtil;
 import com.coworking.model.Role;
 import com.coworking.model.User;
 import com.coworking.repository.RoleRepository;
 import com.coworking.repository.UserRepository;
 
+import com.coworking.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,8 +31,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -41,6 +48,9 @@ public class AuthController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationTokenRepository tokenRepository;
+    private final EmailService emailService;
+
     private  final JwtUtil jwtUtil;
 
     //REGISTER
@@ -90,30 +100,76 @@ public class AuthController {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(role));
+        user.setEnabled(false);
 
         // Guardar
         userRepository.save(user);
 
-        //UserDetails contruir
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
-                .build();
+        //token verificacion
 
-        // Generar token
-        String token = jwtUtil.generateToken(userDetails, user.getUsername());
-        // Obtener rol (primero)
-        String userRole = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("ROLE_USER");
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(
+                null,
+                token,
+                user,
+                LocalDateTime.now().plusHours(24)
+                );
 
-        // Devolver JSON con token
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), userRole));
+        tokenRepository.save(verificationToken);
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        return ResponseEntity.ok(
+                Map.of("message", "Registro exitoso. Revisa tu correo para activar tu cuenta.")
+        );
+    }
+    //VERIFY EMAIL
+    @GetMapping("/verify")
+    public void verifyAccount(@RequestParam String token, HttpServletResponse response) throws IOException {
+        VerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token inválido"));
 
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())){
+            response.sendRedirect("http://localhost:5173/verify-error?reason=expired");
+            return;
+        }
+        User user = verificationToken.getUser();
+        user.setEnabled(true);
+        userRepository.save(user);
+
+        response.sendRedirect("http://localhost:5173/verify-success");
     }
 
+    //REENVIAR CORREO DE VERIFICACION
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String > request){
+        String email = request.get("email");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        if (user.isEnabled()){
+            return ResponseEntity.badRequest()
+                    .body("La cuenta ya está verificada");
+        }
+
+        tokenRepository.deleteAll(
+                tokenRepository.findAll()
+                        .stream()
+                        .filter(t -> t.getUser().equals(user))
+                        .toList()
+        );
+
+        String token = UUID.randomUUID().toString();
+
+        VerificationToken verificationToken = new VerificationToken(
+                null,
+                token,
+                user,
+                LocalDateTime.now().plusHours(24)
+        );
+        tokenRepository.save(verificationToken);
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        return ResponseEntity.ok("Si el correo existe, se ha reenviado el enlace de verificación");
+    }
 
     //LOGIN
     @Operation(
@@ -127,15 +183,25 @@ public class AuthController {
     )
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try {
+        try{
+            // busca usuario
+            User user = userRepository.findByEmail(request.email())
+                    .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
+
+            //verifica usuario
+            if (!user.isEnabled()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                        Map.of(
+                                "code", "EMAIL_NOT_VERIFIED",
+                                "message", "Tu cuenta no ha sido verificada",
+                                "email", user.getEmail()
+                        )
+                );
+            }
+            // Autenticación
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
             );
-
-            // crea usuario con su rol de usuario
-            User user = userRepository.findByEmail(request.email())
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
             // pasamos objeto UserDetails
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             // Generar el token
@@ -149,13 +215,10 @@ public class AuthController {
 
             return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), role));
 
-        } catch (
-                BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Credenciales incorrectas"));
-        } catch (Exception e) {
-            // Esto imprimirá el error real en tu consola si vuelve a fallar
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error en el servidor: " + e.getMessage()));
+        } catch (BadCredentialsException e) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Correo o contraseña incorrectos"));
         }
     }
     //user

@@ -3,6 +3,7 @@ package com.coworking.service;
 import com.coworking.model.Role;
 import com.coworking.model.User;
 import com.coworking.repository.UserRepository;
+import com.coworking.repository.VerificationTokenRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,6 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPassword()) //incriptada
+                .disabled(!user.isEnabled()) //bloquea si no esta verificado
                 .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
                 .build();
     }
