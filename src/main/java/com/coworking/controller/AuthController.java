@@ -95,12 +95,38 @@ public class AuthController {
         // Guardar
         userRepository.save(user);
 
-        //UserDetails contruir
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .authorities(user.getRoles().stream().map(Role::getName).toArray(String[]::new))
-                .build();
+        //token verificacion
+
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(
+                null,
+                token,
+                user,
+                LocalDateTime.now().plusHours(24)
+                );
+
+        tokenRepository.save(verificationToken);
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        return ResponseEntity.ok(
+                Map.of("message", "Registro exitoso. Revisa tu correo para activar tu cuenta.")
+        );
+    }
+    //VERIFY EMAIL
+    @GetMapping("/verify")
+    public void verifyAccount(@RequestParam String token, HttpServletResponse response) throws IOException {
+        VerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token inválido"));
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())){
+            response.sendRedirect("http://localhost:5173/verify-error?reason=expired");
+            return;
+        }
+        User user = verificationToken.getUser();
+        user.setEnabled(true);
+        userRepository.save(user);
+
+        response.sendRedirect("http://localhost:5173/verify-success");
+    }
 
         // Generar token
         String token = jwtUtil.generateToken(userDetails, user.getUsername());
