@@ -19,6 +19,6 @@ public class ContactRequest {
     private String email;
 
     @NotBlank(message = "El mensaje es obligatorio")
-    @Size(min = 10, message = "El mensaje debe tener al menos 10 caracteres")
+    @Size(min = 6, message = "El mensaje debe tener al menos 6 caracteres")
     private String message;
 }
