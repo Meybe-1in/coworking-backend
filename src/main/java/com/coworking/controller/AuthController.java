@@ -1,8 +1,8 @@
 package com.coworking.controller;
-import com.coworking.dto.AuthResponse;
-import com.coworking.dto.LoginRequest;
-import com.coworking.dto.RegisterRequest;
+import com.coworking.dto.*;
+import com.coworking.model.PasswordResetToken;
 import com.coworking.model.VerificationToken;
+import com.coworking.repository.PasswordResetTokenRepository;
 import com.coworking.repository.VerificationTokenRepository;
 import com.coworking.security.JwtUtil;
 import com.coworking.model.Role;
@@ -11,6 +11,7 @@ import com.coworking.repository.RoleRepository;
 import com.coworking.repository.UserRepository;
 
 import com.coworking.service.EmailService;
+import com.coworking.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,6 +52,8 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository tokenRepository;
     private final EmailService emailService;
+    private final PasswordResetTokenRepository resetTokenRepository;
+    private final PasswordResetService passwordResetService;
 
     private  final JwtUtil jwtUtil;
 
@@ -270,4 +274,26 @@ public class AuthController {
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "Administrador registrado correctamente"));
     }
+
+    //endpoint forgot password
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) throws BadRequestException {
+        passwordResetService.sendResetLink(request.getEmail());
+
+        return ResponseEntity.ok(
+                Map.of("message", "Se enviará un enlace de recuperación a su correo registrado")
+        );
+    }
+
+    //endpoint reset password
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) throws BadRequestException {
+        passwordResetService.resetPassword(request);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Contraseña actualizada correctamente")
+        );
+    }
+
+
 }
