@@ -11,6 +11,7 @@ import com.coworking.repository.RoleRepository;
 import com.coworking.repository.UserRepository;
 
 import com.coworking.service.EmailService;
+import com.coworking.service.GoogleAuthService;
 import com.coworking.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.Authenticator;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +56,7 @@ public class AuthController {
     private final EmailService emailService;
     private final PasswordResetTokenRepository resetTokenRepository;
     private final PasswordResetService passwordResetService;
-
+    private final GoogleAuthService googleAuthService;
     private  final JwtUtil jwtUtil;
 
     //REGISTER
@@ -295,5 +297,12 @@ public class AuthController {
         );
     }
 
+    //google auth
+    @PostMapping("/auth/google")
+    public ResponseEntity<AuthResponse> googleAuth(@Valid @RequestBody GoogleAuthRequest request){
 
+        return ResponseEntity.ok(
+                googleAuthService.authenticate(request.getAccessToken())
+        );
+    }
 }
