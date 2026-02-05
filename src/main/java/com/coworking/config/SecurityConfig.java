@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
 
                         ).permitAll()
+                        .requestMatchers("/auth/google").permitAll()
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated()
