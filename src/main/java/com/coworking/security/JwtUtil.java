@@ -20,15 +20,18 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
-    private Long jwtExpirationMs;
+    @Value("${jwt.expiration.short}")
+    private Long shortExpirationMs;
+
+    @Value("${jwt.expiration.long}")
+    private Long longExpirationMs;
 
     private Key getSigningKey(){
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    public String generateToken(UserDetails userDetails, String usernameR){
-
+    public String generateToken(UserDetails userDetails, String usernameR, boolean rememberMe){
+        long expiration = rememberMe ? longExpirationMs : shortExpirationMs;
         Map<String, Object> claims = new HashMap<>();
         String role = userDetails.getAuthorities().stream()
                 .findFirst()
@@ -41,7 +44,7 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername()) // Aquí va el email
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

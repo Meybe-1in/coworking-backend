@@ -7,5 +7,6 @@ import jakarta.validation.constraints.Email;
 public record LoginRequest(
         @Email(message = "Formato de email inválido")
         String email,
-        String password)
+        String password,
+        boolean rememberMe)
 { }
