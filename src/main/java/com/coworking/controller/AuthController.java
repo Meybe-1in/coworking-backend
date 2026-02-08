@@ -211,7 +211,7 @@ public class AuthController {
             // pasamos objeto UserDetails
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             // Generar el token
-            String token = jwtUtil.generateToken(userDetails, user.getUsername());
+            String token = jwtUtil.generateToken(userDetails, user.getUsername(), request.rememberMe());
 
             //role
             String role = userDetails.getAuthorities().stream()
@@ -302,7 +302,9 @@ public class AuthController {
     public ResponseEntity<AuthResponse> googleAuth(@Valid @RequestBody GoogleAuthRequest request){
 
         return ResponseEntity.ok(
-                googleAuthService.authenticate(request.getAccessToken())
+                googleAuthService.authenticate(
+                        request.getAccessToken(),
+                        request.isRememberMe())
         );
     }
 }

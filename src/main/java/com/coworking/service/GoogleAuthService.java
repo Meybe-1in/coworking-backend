@@ -29,7 +29,7 @@ public class GoogleAuthService {
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public AuthResponse authenticate(String accessToken){
+    public AuthResponse authenticate(String accessToken, boolean rememberMe){
         GoogleUserInfo googleUser = getUserInfo(accessToken);
 
         if (googleUser == null || !Boolean.TRUE.equals(googleUser.getEmail_verified())) {
@@ -50,7 +50,7 @@ public class GoogleAuthService {
                         )
                         .build();
 
-        String token = jwtUtil.generateToken(userDetails, user.getUsername());
+        String token = jwtUtil.generateToken(userDetails, user.getUsername(), rememberMe);
 
         String role = user.getRoles().stream()
                 .findFirst()
@@ -92,26 +92,4 @@ public class GoogleAuthService {
         return userRepository.save(user);
 
     }
-
-    /*private GoogleIdToken.Payload verifyToken(String idTokenString) {
-        try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
-                    GsonFactory.getDefaultInstance()
-            )
-                    .setAudience(List.of(googleClientId))
-                    .build();
-
-            GoogleIdToken idToken = verifier.verify(idTokenString);
-
-            if (idToken == null){
-                throw new RuntimeException("Token de Google inválido");
-            }
-            return idToken.getPayload();
-
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error validando token Google", e);
-        }
-    }*/
 }

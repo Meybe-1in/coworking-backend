@@ -9,4 +9,5 @@ import lombok.Setter;
 @Setter
 public class GoogleAuthRequest {
     private String accessToken;
+    private boolean rememberMe;
 }
