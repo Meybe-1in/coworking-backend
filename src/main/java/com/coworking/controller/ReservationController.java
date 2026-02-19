@@ -56,7 +56,7 @@ public class ReservationController {
     }
 
     //endpoint calendario de reservas(read only)
-    @GetMapping("/room/{roomId}/calendar")
+    @GetMapping("/calendar")
     @Operation(summary = "Calendario reservas por sala")
     public List<CalendarEventResponse> getRoomCalendar(
             @RequestParam
