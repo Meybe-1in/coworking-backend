@@ -1,16 +1,20 @@
 package com.coworking.controller;
 
+import com.coworking.dto.CalendarEventResponse;
 import com.coworking.dto.ReservationRequest;
 import com.coworking.dto.ReservationResponse;
 import com.coworking.repository.UserRepository;
 import com.coworking.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -50,5 +54,18 @@ public class ReservationController {
     public void delete(@PathVariable Long id) {
         reservationService.deleteReservation(id);
     }
+
+    //endpoint calendario de reservas(read only)
+    @GetMapping("/room/{roomId}/calendar")
+    @Operation(summary = "Calendario reservas por sala")
+    public List<CalendarEventResponse> getRoomCalendar(
+            @RequestParam
+            LocalDateTime from,
+            @RequestParam
+            LocalDateTime to
+            ){
+        return reservationService.getCalendar(from, to);
+    }
+
 }
 
