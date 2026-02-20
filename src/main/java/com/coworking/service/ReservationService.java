@@ -1,6 +1,7 @@
 package com.coworking.service;
 
 
+import com.coworking.dto.CalendarEventResponse;
 import com.coworking.dto.ReservationRequest;
 import com.coworking.dto.ReservationResponse;
 import com.coworking.exception.ReservationConflictException;
@@ -106,6 +107,19 @@ public class ReservationService {
         reservationRepository.deleteById(id);
     }
 
-
-
+    //ver eventos en calendario
+    public List<CalendarEventResponse> getCalendar(
+            LocalDateTime from,
+            LocalDateTime to
+    ){
+        return reservationRepository
+                .findByStartAtLessThanAndEndAtGreaterThan(to, from)
+                .stream()
+                .map(r -> new CalendarEventResponse(
+                         r.getRoom().getName(),
+                         r.getStartAt(),
+                         r.getEndAt()
+                ))
+                .collect(Collectors.toList());
+    }
 }

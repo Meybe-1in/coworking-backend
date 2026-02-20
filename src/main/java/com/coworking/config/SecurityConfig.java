@@ -54,6 +54,10 @@ public class SecurityConfig {
 
                         ).permitAll()
                         .requestMatchers("/auth/google").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reservations/**")
+                        .hasAnyRole("USER","ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/**")
+                        .hasAnyRole("USER","ADMIN")
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .anyRequest().authenticated()
