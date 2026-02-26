@@ -55,17 +55,18 @@ public class ReservationController {
         reservationService.deleteReservation(id);
     }
 
-    //endpoint calendario de reservas(read only)
+    ///endpoint calendario de reservas(read only)
     @GetMapping("/calendar")
     @Operation(summary = "Calendario reservas por sala")
-    public List<CalendarEventResponse> getRoomCalendar(
+    public List<CalendarEventResponse> getCalendar(
             @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime from,
             @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime to
-            ){
+    ){
         return reservationService.getCalendar(from, to);
     }
-
 }
 
