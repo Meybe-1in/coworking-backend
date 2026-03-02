@@ -1,9 +1,15 @@
 package com.coworking.resources.controller;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import com.coworking.repository.PasswordResetTokenRepository;
+import com.coworking.repository.VerificationTokenRepository;
+import com.coworking.service.EmailService;
+import com.coworking.service.GoogleAuthService;
+import com.coworking.service.PasswordResetService;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +36,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -60,6 +62,21 @@ public class AuthControllerTest {
     @MockitoBean
     private JwtUtil jwtUtil;
 
+    @MockitoBean
+    private VerificationTokenRepository verificationTokenRepository;
+
+    @MockitoBean
+    private EmailService emailService;
+
+    @MockitoBean
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @MockitoBean
+    private PasswordResetService passwordResetService;
+
+    @MockitoBean
+    private GoogleAuthService googleAuthService;
+
     // REGISTER TESTS
 
     @Test
@@ -83,16 +100,15 @@ public class AuthControllerTest {
         Mockito.when(passwordEncoder.encode("Aa123456!"))
                 .thenReturn("encodedPass");
 
-        Mockito.when(jwtUtil.generateToken(any(), eq("userTest")))
+        Mockito.when(jwtUtil.generateToken(any(UserDetails.class), eq("userTest"), anyBoolean()))
                 .thenReturn("fake-jwt");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("fake-jwt"))
-                .andExpect(jsonPath("$.username").value("userTest"))
-                .andExpect(jsonPath("$.role").value("ROLE_USER"));
+                .andExpect(jsonPath("$.message")
+                        .value("Registro exitoso. Revisa tu correo para activar tu cuenta."));
     }
 
     @Test
@@ -134,11 +150,12 @@ public class AuthControllerTest {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        LoginRequest request = new LoginRequest("login@mail.com", "123456");
+        LoginRequest request = new LoginRequest("login@mail.com", "123456", false);
 
         User user = new User();
         user.setUsername("loginUser");
         user.setEmail("login@mail.com");
+        user.setEnabled(true);
         user.setRoles(Set.of(new Role("ROLE_USER")));
 
         Authentication authMock = Mockito.mock(Authentication.class);
@@ -149,8 +166,9 @@ public class AuthControllerTest {
         Mockito.when(userRepository.findByEmail("login@mail.com"))
                 .thenReturn(Optional.of(user));
 
-        Mockito.when(jwtUtil.generateToken(any(), eq("loginUser")))
+        Mockito.when(jwtUtil.generateToken(any(UserDetails.class), eq("loginUser"), eq(false)))
                 .thenReturn("jwt-login");
+
         UserDetails springUser =
                 new org.springframework.security.core.userdetails.User(
                         "login@mail.com",
@@ -169,7 +187,7 @@ public class AuthControllerTest {
 
     @Test
     void shouldReturn401WhenBadCredentials() throws Exception {
-        LoginRequest request = new LoginRequest("wrong@mail.com", "fail");
+        LoginRequest request = new LoginRequest("wrong@mail.com", "fail", false);
 
         Mockito.when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("Bad creds"));
@@ -178,7 +196,7 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Credenciales incorrectas"));
+                .andExpect(jsonPath("$.message").value("Correo o contraseña incorrectos"));
     }
 
     @Test

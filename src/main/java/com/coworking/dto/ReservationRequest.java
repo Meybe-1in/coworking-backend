@@ -1,5 +1,6 @@
 package com.coworking.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,7 @@ public class ReservationRequest {
     @NotNull(message = "La fecha de finalización es obligatoria")
     private LocalDateTime endAt;
 
+    @NotBlank
     private String note;
 
 }

@@ -33,9 +33,9 @@ public class ReservationController {
 
     @PostMapping
     @Operation(summary = "Crear una reserva (USER o ADMIN)")
-    public ReservationResponse create(@Valid @RequestBody ReservationRequest request, Authentication auth) {
+    public ReservationResponse create(@Valid @RequestBody ReservationRequest request, Authentication authentication) {
         // auth.getName() nos da el username del usuario autenticado
-      String username = auth.getName();
+      String username = authentication.getName();
       Long userId = userRepository.findByEmail(username)
               .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username))
               .getId();
