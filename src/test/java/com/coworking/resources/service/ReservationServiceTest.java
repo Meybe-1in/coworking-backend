@@ -1,4 +1,4 @@
-package com.coworking;
+package com.coworking.resources.service;
 
 import com.coworking.dto.ReservationRequest;
 import com.coworking.dto.ReservationResponse;
@@ -123,5 +123,27 @@ class ReservationServiceTest {
         // When + Then
         assertThrows(ReservationConflictException.class,
                 () -> reservationService.createReservation(user.getId(), request));
+    }
+    //Validacion de horario invalido
+    @Test
+    void createReservation_invalidHour_throwsException() {
+        request.setStartAt(LocalDateTime.of(2025,10,1,7,0));
+        request.setEndAt(LocalDateTime.of(2025,10,1,9,0));
+
+        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThrows(ReservationConflictException.class,
+                () -> reservationService.createReservation(user.getId(), request));
+    }
+
+    //delete
+    @Test
+    void deleteReservation_success() {
+        when(reservationRepository.existsById(1L)).thenReturn(true);
+
+        reservationService.deleteReservation(1L);
+
+        verify(reservationRepository).deleteById(1L);
     }
 }
