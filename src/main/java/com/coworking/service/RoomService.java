@@ -7,6 +7,7 @@ import com.coworking.model.Room;
 import com.coworking.repository.ReservationRepository;
 import com.coworking.repository.RoomRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +15,7 @@ import java.security.PrivateKey;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +28,17 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
     private final FileStorageService fileStorageService;
+
+    private RoomAvailabilityResponse mapToAvailability(Room room) {
+        RoomAvailabilityResponse r = new RoomAvailabilityResponse();
+        r.setId(room.getId());
+        r.setName(room.getName());
+        r.setCapacity(room.getCapacity());
+        r.setLocation(room.getLocation());
+        r.setImageUrl(room.getImageUrl());
+        r.setAvailable(room.isAvailable());
+        return r;
+    }
 
     private RoomDto mapToDto(Room room){
         RoomDto dto = new RoomDto();
@@ -55,8 +68,9 @@ public class RoomService {
         return room;
     }
 
+    //Obtener todas las salas
     public List<RoomDto> getAllRooms(){
-        return roomRepository.findAll()
+        return roomRepository.findAll(Sort.by(Sort.Direction.ASC, "capacity"))
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -78,6 +92,7 @@ public class RoomService {
         return mapToDto(saved);
     }
 
+    //actualizar salas
     public Optional<RoomDto> updateRoom(Long id, RoomDto dto){
         return roomRepository.findById(id).map(existing -> {
             existing.setName(dto.getName());
@@ -92,6 +107,7 @@ public class RoomService {
         });
     }
 
+    //Eliminar
     public boolean deleteRoom(Long id){
         if (!roomRepository.existsById(id)) return false;
         roomRepository.deleteById(id);
@@ -108,25 +124,13 @@ public class RoomService {
         LocalDateTime startDT = LocalDateTime.of(date, start);
         LocalDateTime endDT = LocalDateTime.of(date, end);
 
-        // Obtener salas con capacidad suficiente
-        List<Room> rooms = roomRepository.findByCapacityGreaterThanEqual(people);
+        // salas ordenadas por capacity desde DB
+        List<Room> rooms = roomRepository.findByCapacityGreaterThanEqualOrderByCapacityAsc(people);
 
         if (people == 1) {
-            List<Room> onePersonRooms = rooms.stream()
+           return rooms.stream()
                     .filter(r -> r.getCapacity() == 1)
-                    .collect(Collectors.toList());
-            return onePersonRooms.stream()
-                    .map(room -> {
-                        RoomAvailabilityResponse r = new RoomAvailabilityResponse();
-                        r.setId(room.getId());
-                        r.setName(room.getName());
-                        r.setCapacity(room.getCapacity());
-                        r.setLocation(room.getLocation());
-                        r.setImageUrl(room.getImageUrl());
-                        r.setAvailable(room.isAvailable());
-
-                        return r;
-                    })
+                   .map(this::mapToAvailability)
                     .collect(Collectors.toList());
         }
 
@@ -139,24 +143,13 @@ public class RoomService {
                 .map(r -> r.getRoom().getId())
                 .collect(Collectors.toSet());
 
-        // Filtrar salas que NO están ocupadas
+        // Filtrar soo las disponibles (Ya vienen ordenadas)
         List<Room> availableRooms = rooms.stream()
                 .filter(room -> !busyRoomIds.contains(room.getId()))
                 .toList();
 
-        // Convertir a DTO respuesta
         return availableRooms.stream()
-                .map(room -> {
-                    RoomAvailabilityResponse r = new RoomAvailabilityResponse();
-                    r.setId(room.getId());
-                    r.setName(room.getName());
-                    r.setCapacity(room.getCapacity());
-                    r.setLocation(room.getLocation());
-                    r.setImageUrl(room.getImageUrl());
-                    r.setAvailable(room.isAvailable());
-
-                    return r;
-                })
+                .map(this::mapToAvailability)
                 .collect(Collectors.toList());
     }
 }
