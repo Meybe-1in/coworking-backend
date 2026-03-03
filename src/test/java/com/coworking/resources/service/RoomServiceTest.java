@@ -167,5 +167,23 @@ class RoomServiceTest {
         assertFalse(deleted);
         verify(roomRepository, never()).deleteById(anyLong());
     }
+    
+    @Test
+    void getAllRooms_debeRetornarOrdenAscendentePorCapacidad() {
+
+        Room r1 = new Room();
+        r1.setCapacity(6);
+
+        Room r2 = new Room();
+        r2.setCapacity(4);
+
+        when(roomRepository.findAll(any(Sort.class)))
+                .thenReturn(List.of(r2, r1));
+
+        List<RoomDto> result = roomService.getAllRooms();
+
+        assertEquals(4, result.get(0).getCapacity());
+        assertEquals(6, result.get(1).getCapacity());
+    }
 }
 
