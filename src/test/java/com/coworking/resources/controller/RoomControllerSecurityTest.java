@@ -1,0 +1,55 @@
+package com.coworking.resources.controller;
+
+import com.coworking.controller.RoomController;
+import com.coworking.security.JwtUtil;
+import com.coworking.service.RoomService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
+@WebMvcTest(RoomController.class)
+@AutoConfigureMockMvc
+public class RoomControllerSecurityTest {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private RoomService roomService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+
+
+
+    //Usuario normal no puedde eliminar
+    @Test
+    @WithMockUser(roles = "USER")
+    public void usuarioNoAdmin_noPuedeEliminarSala() throws Exception {
+
+        mockMvc.perform(delete("/api/rooms/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    // Admin si puede eliminar
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void adminPuedeEliminarSala() throws Exception {
+
+        when(roomService.deleteRoom(1L)).thenReturn(true);
+
+        mockMvc.perform(delete("/api/rooms/1")
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
+}
