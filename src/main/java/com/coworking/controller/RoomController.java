@@ -81,6 +81,8 @@ public class RoomController {
         LocalTime s = LocalTime.parse(start);
         LocalTime e = LocalTime.parse(end);
 
+        if(s.isAfter(e)) return ResponseEntity.badRequest().build();
+
         List<RoomAvailabilityResponse> available = roomService.findAvailableRooms(d, s, e, people);
         return ResponseEntity.ok(available);
     }
