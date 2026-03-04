@@ -49,4 +49,25 @@ class RoomControllerTest {
         mockMvc.perform(get("/api/rooms"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminEliminarSala_inexistente_devuelve404() throws Exception {
+
+        when(roomService.deleteRoom(1L)).thenReturn(false);
+
+        mockMvc.perform(delete("/api/rooms/1")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    //Validacion de id numerico
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void eliminarSala_idInvalido_devuelve400() throws Exception {
+
+        mockMvc.perform(delete("/api/rooms/abc")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
 }
