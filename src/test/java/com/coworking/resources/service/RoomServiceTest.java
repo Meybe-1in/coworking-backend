@@ -7,9 +7,12 @@ import com.coworking.service.FileStorageService;
 import com.coworking.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +21,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
 
     @Mock
@@ -34,7 +38,7 @@ class RoomServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        //MockitoAnnotations.openMocks(this);
 
         room = new Room();
         room.setId(1L);
@@ -63,7 +67,7 @@ class RoomServiceTest {
 
     @Test
     void getAllRooms_returnsList() {
-        when(roomRepository.findAll()).thenReturn(List.of(room));
+        when(roomRepository.findAll(any(Sort.class))).thenReturn(List.of(room));
 
         List<RoomDto> rooms = roomService.getAllRooms();
 
@@ -166,6 +170,24 @@ class RoomServiceTest {
 
         assertFalse(deleted);
         verify(roomRepository, never()).deleteById(anyLong());
+    }
+    
+    @Test
+    void getAllRooms_debeRetornarOrdenAscendentePorCapacidad() {
+
+        Room r1 = new Room();
+        r1.setCapacity(6);
+
+        Room r2 = new Room();
+        r2.setCapacity(4);
+
+        when(roomRepository.findAll(any(Sort.class)))
+                .thenReturn(List.of(r2, r1));
+
+        List<RoomDto> result = roomService.getAllRooms();
+
+        assertEquals(4, result.get(0).getCapacity());
+        assertEquals(6, result.get(1).getCapacity());
     }
 }
 
