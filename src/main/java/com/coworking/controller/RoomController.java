@@ -6,13 +6,13 @@ import com.coworking.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -70,20 +70,17 @@ public class RoomController {
         RoomDto savedRoom = roomService.createRoom(roomDto, image);
         return  ResponseEntity.ok(savedRoom);
     }
-    @GetMapping("/available")
-    public ResponseEntity<List<RoomAvailabilityResponse>> getAvailableRooms(
-            @RequestParam String date,
-            @RequestParam String start,
-            @RequestParam String end,
+    @GetMapping("/availability")
+    public List<RoomAvailabilityResponse> getAvailability(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime start,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime end,
             @RequestParam Integer people
     ){
-        LocalDate d = LocalDate.parse(date);
-        LocalTime s = LocalTime.parse(start);
-        LocalTime e = LocalTime.parse(end);
 
-        if(s.isAfter(e)) return ResponseEntity.badRequest().build();
-
-        List<RoomAvailabilityResponse> available = roomService.findAvailableRooms(d, s, e, people);
-        return ResponseEntity.ok(available);
+        return roomService.getRoomsAvailability(start,end,people);
     }
 }

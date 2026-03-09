@@ -74,9 +74,9 @@ public class ReservationService {
         if (!start.isBefore(end)) throw new
                 ReservationConflictException("La hora de inicio debe ser anterior a la hora de fin");
 
-        if (start.toLocalTime().isBefore(LocalTime.of(8,0)) ||
+        if (start.toLocalTime().isBefore(LocalTime.of(7,0)) ||
                 end.toLocalTime().isAfter(LocalTime.of(20, 0)))
-            throw new ReservationConflictException("Las reservas deben estar entre 08:00 y 20:00");
+            throw new ReservationConflictException("Las reservas deben estar entre 07:00 y 20:00");
 
         if (end.minusHours(8).isAfter(start))
             throw new ReservationConflictException("La duración máxima de una reserva es de 8 horas");

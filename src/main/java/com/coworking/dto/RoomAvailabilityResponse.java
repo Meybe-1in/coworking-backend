@@ -7,6 +7,7 @@ public class RoomAvailabilityResponse {
     private Long id;
     private String name;
     private Integer capacity;
+    private Double price;
     private String location;
     private String imageUrl;
     private boolean available;
