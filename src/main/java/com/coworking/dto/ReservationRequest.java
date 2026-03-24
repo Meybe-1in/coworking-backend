@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter @Setter
 public class ReservationRequest {
@@ -14,10 +14,10 @@ public class ReservationRequest {
     private Long roomId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
-    private LocalDateTime startAt;
+    private Instant startAt;
 
     @NotNull(message = "La fecha de finalización es obligatoria")
-    private LocalDateTime endAt;
+    private Instant endAt;
 
     @NotBlank
     private String note;

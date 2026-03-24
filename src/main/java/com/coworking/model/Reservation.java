@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "reservations")
@@ -28,10 +28,10 @@ public class Reservation {
     private User user;
 
     @Column(nullable = false)
-    private LocalDateTime startAt;
+    private Instant startAt;
 
     @Column(nullable = false)
-    private LocalDateTime endAt;
+    private Instant endAt;
 
     private String notes;
 
