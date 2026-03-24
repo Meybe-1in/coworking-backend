@@ -15,9 +15,7 @@ import com.coworking.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,8 +34,11 @@ public class ReservationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        LocalDateTime start = request.getStartAt();
-        LocalDateTime end = request.getEndAt();
+        Instant start = request.getStartAt();
+        Instant end = request.getEndAt();
+
+        System.out.println("START: " + start);
+        System.out.println("END: " + end);
 
         validateReservationTimes(start, end);
 
@@ -66,8 +67,8 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
-    private void validateReservationTimes(LocalDateTime start, LocalDateTime end){
-        LocalDateTime now = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+    private void validateReservationTimes(Instant start, Instant end){
+        Instant now = Instant.now();
 
         // evitar horas pasadas
         if (start.isBefore(now)) {
@@ -78,11 +79,15 @@ public class ReservationService {
         if (!start.isBefore(end)) {
             throw new ReservationConflictException("La hora de inicio debe ser anterior a la de fin");
         }
+        // horario 07:00 - 20:00 EN HORA LOCAL
+        ZoneId zone = ZoneId.of("America/El_Salvador");
+
+        LocalTime startLocal = start.atZone(zone).toLocalTime();
+        LocalTime endLocal = end.atZone(zone).toLocalTime();
 
         // horario permitido
-        if (start.toLocalTime().isBefore(LocalTime.of(7,0)) ||
-                end.toLocalTime().isAfter(LocalTime.of(20,0))) {
-
+        if (startLocal.isBefore(LocalTime.of(7,0)) ||
+                endLocal.isAfter(LocalTime.of(20,0))) {
             throw new ReservationConflictException("Las reservas deben estar entre 07:00 y 20:00");
         }
 
@@ -118,8 +123,8 @@ public class ReservationService {
 
     //ver eventos en calendario
     public List<CalendarEventResponse> getCalendar(
-            LocalDateTime from,
-            LocalDateTime to
+            Instant from,
+            Instant to
     ){
         return reservationRepository
                 .findByStartAtLessThanAndEndAtGreaterThan(to, from)
@@ -127,7 +132,8 @@ public class ReservationService {
                 .map(r -> new CalendarEventResponse(
                          r.getRoom().getName(),
                          r.getStartAt(),
-                         r.getEndAt()
+                         r.getEndAt(),
+                         r.getRoom().getId()
                 ))
                 .collect(Collectors.toList());
     }
