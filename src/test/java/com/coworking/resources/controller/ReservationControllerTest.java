@@ -19,6 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -55,8 +56,8 @@ public class ReservationControllerTest {
 
         ReservationRequest request = new ReservationRequest();
         request.setRoomId(1L);
-        request.setStartAt(LocalDateTime.of(2025,10,1,10,0));
-        request.setEndAt(LocalDateTime.of(2025,10,1,12,0));
+        request.setStartAt(Instant.parse("2025-10-01T10:00:00Z"));
+        request.setEndAt(Instant.parse("2025-10-01T12:00:00Z"));
 
         User user = new User();
         user.setId(1L);

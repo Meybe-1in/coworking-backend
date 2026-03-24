@@ -12,11 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.PrivateKey;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Comparator;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -132,8 +128,8 @@ public class RoomService {
     // ROOM AVAILABILITY
 
     public List<RoomAvailabilityResponse> getRoomsAvailability(
-            LocalDateTime start,
-            LocalDateTime end,
+            Instant start,
+           Instant end,
             Integer people
     ){
 

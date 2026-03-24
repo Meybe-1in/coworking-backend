@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter @Setter
 @AllArgsConstructor
@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class CalendarEventResponse {
 
     private String title;
-    private LocalDateTime start;
-    private LocalDateTime end;
+    private Instant start;
+    private Instant end;
+    private Long roomId;
 }

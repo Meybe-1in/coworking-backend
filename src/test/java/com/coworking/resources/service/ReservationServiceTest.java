@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -55,8 +56,8 @@ class ReservationServiceTest {
 
         request = new ReservationRequest();
         request.setRoomId(room.getId());
-        request.setStartAt(LocalDateTime.of(2025, 10, 1, 10, 0));
-        request.setEndAt(LocalDateTime.of(2025, 10, 1, 12, 0));
+        request.setStartAt(Instant.parse("2025-10-01T10:00:00Z"));
+        request.setEndAt(Instant.parse("2025-10-01T12:00:00Z"));
     }
 
     @Test
@@ -127,9 +128,8 @@ class ReservationServiceTest {
     //Validacion de horario invalido
     @Test
     void createReservation_invalidHour_throwsException() {
-        request.setStartAt(LocalDateTime.of(2025,10,1,7,0));
-        request.setEndAt(LocalDateTime.of(2025,10,1,9,0));
-
+        request.setStartAt(Instant.parse("2025-10-01T10:00:00Z"));
+        request.setEndAt(Instant.parse("2025-10-01T12:00:00Z"));
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
