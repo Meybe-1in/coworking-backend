@@ -1,6 +1,7 @@
 package com.coworking.reservation.service;
 
 
+import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.dto.CalendarEventResponse;
 import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;
@@ -29,16 +30,13 @@ public class ReservationService {
 
     public ReservationResponse createReservation(Long userId, ReservationRequest request){
         Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Sala no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Sala no encontrada"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         Instant start = request.getStartAt();
         Instant end = request.getEndAt();
-
-        System.out.println("START: " + start);
-        System.out.println("END: " + end);
 
         validateReservationTimes(start, end);
 

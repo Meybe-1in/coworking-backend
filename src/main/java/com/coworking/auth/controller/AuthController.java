@@ -3,6 +3,7 @@ import com.coworking.auth.dto.*;
 import com.coworking.auth.model.VerificationToken;
 import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.auth.repository.VerificationTokenRepository;
+import com.coworking.exception.NotFoundException;
 import com.coworking.security.JwtUtil;
 import com.coworking.role.model.Role;
 import com.coworking.user.model.User;
@@ -129,7 +130,7 @@ public class AuthController {
     @GetMapping("/verify")
     public void verifyAccount(@RequestParam String token, HttpServletResponse response) throws IOException {
         VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token inválido"));
+                .orElseThrow(() -> new com.coworking.exception.BadRequestException("Token inválido"));
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())){
             response.sendRedirect("http://localhost:5173/verify-error?reason=expired");
@@ -149,7 +150,7 @@ public class AuthController {
         String email = request.get("email");
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
         if (user.isEnabled()){
             return ResponseEntity.badRequest()
                     .body("La cuenta ya está verificada");
