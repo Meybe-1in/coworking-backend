@@ -1,7 +1,7 @@
 package com.coworking.util;
 
-import com.coworking.model.Role;
-import com.coworking.repository.RoleRepository;
+import com.coworking.role.model.Role;
+import com.coworking.role.repository.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
 
 public class DataInitializer implements CommandLineRunner {

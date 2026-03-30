@@ -1,11 +1,10 @@
 package com.coworking.resources.controller;
 
-import com.coworking.config.AuthenticationEntryPointImpl;
-import com.coworking.config.SecurityConfig;
-import com.coworking.controller.ReservationController;
-import com.coworking.repository.UserRepository;
-import com.coworking.service.CustomUserDetailsService;
-import com.coworking.service.ReservationService;
+import com.coworking.security.AuthenticationEntryPointImpl;
+import com.coworking.reservation.controller.ReservationController;
+import com.coworking.user.repository.UserRepository;
+import com.coworking.security.CustomUserDetailsService;
+import com.coworking.reservation.service.ReservationService;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
 
@@ -18,7 +17,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;

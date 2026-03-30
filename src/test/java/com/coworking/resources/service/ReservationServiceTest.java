@@ -1,16 +1,16 @@
 package com.coworking.resources.service;
 
-import com.coworking.dto.ReservationRequest;
-import com.coworking.dto.ReservationResponse;
+import com.coworking.reservation.dto.ReservationRequest;
+import com.coworking.reservation.dto.ReservationResponse;
 import com.coworking.exception.ReservationConflictException;
-import com.coworking.model.Reservation;
-import com.coworking.model.ReservationStatus;
-import com.coworking.model.Room;
-import com.coworking.model.User;
-import com.coworking.repository.ReservationRepository;
-import com.coworking.repository.RoomRepository;
-import com.coworking.repository.UserRepository;
-import com.coworking.service.ReservationService;
+import com.coworking.reservation.model.Reservation;
+import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.room.model.Room;
+import com.coworking.user.model.User;
+import com.coworking.reservation.repository.ReservationRepository;
+import com.coworking.room.repository.RoomRepository;
+import com.coworking.user.repository.UserRepository;
+import com.coworking.reservation.service.ReservationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;

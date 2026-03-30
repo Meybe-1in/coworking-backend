@@ -1,14 +1,14 @@
 package com.coworking.resources.controller;
 
 
-import com.coworking.controller.ReservationController;
-import com.coworking.dto.ReservationRequest;
-import com.coworking.dto.ReservationResponse;
-import com.coworking.model.User;
-import com.coworking.repository.UserRepository;
+import com.coworking.reservation.controller.ReservationController;
+import com.coworking.reservation.dto.ReservationRequest;
+import com.coworking.reservation.dto.ReservationResponse;
+import com.coworking.user.model.User;
+import com.coworking.user.repository.UserRepository;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
-import com.coworking.service.ReservationService;
+import com.coworking.reservation.service.ReservationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.MediaType;
@@ -20,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;

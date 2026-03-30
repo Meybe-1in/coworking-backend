@@ -1,7 +1,8 @@
 package com.coworking.config;
 
+import com.coworking.security.AuthenticationEntryPointImpl;
 import com.coworking.security.JwtAuthenticationFilter;
-import com.coworking.service.CustomUserDetailsService;
+import com.coworking.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +17,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.List;

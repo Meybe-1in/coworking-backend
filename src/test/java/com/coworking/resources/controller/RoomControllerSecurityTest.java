@@ -1,8 +1,8 @@
 package com.coworking.resources.controller;
 
-import com.coworking.controller.RoomController;
+import com.coworking.room.controller.RoomController;
 import com.coworking.security.JwtUtil;
-import com.coworking.service.RoomService;
+import com.coworking.room.service.RoomService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

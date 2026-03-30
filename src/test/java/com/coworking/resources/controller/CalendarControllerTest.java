@@ -1,21 +1,18 @@
 package com.coworking.resources.controller;
 
-import com.coworking.controller.ReservationController;
-import com.coworking.dto.CalendarEventResponse;
-import com.coworking.repository.UserRepository;
+import com.coworking.reservation.controller.ReservationController;
+import com.coworking.reservation.dto.CalendarEventResponse;
+import com.coworking.user.repository.UserRepository;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
-import com.coworking.service.ReservationService;
+import com.coworking.reservation.service.ReservationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;

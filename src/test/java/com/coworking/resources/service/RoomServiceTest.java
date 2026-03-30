@@ -1,16 +1,15 @@
 package com.coworking.resources.service;
 
-import com.coworking.dto.RoomDto;
-import com.coworking.model.Room;
-import com.coworking.repository.RoomRepository;
-import com.coworking.service.FileStorageService;
-import com.coworking.service.RoomService;
+import com.coworking.room.dto.RoomDto;
+import com.coworking.room.model.Room;
+import com.coworking.room.repository.RoomRepository;
+import com.coworking.storage.service.FileStorageService;
+import com.coworking.room.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
