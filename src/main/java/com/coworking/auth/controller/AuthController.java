@@ -3,6 +3,7 @@ import com.coworking.auth.dto.*;
 import com.coworking.auth.model.VerificationToken;
 import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.auth.repository.VerificationTokenRepository;
+import com.coworking.auth.service.AuthService;
 import com.coworking.exception.NotFoundException;
 import com.coworking.security.JwtUtil;
 import com.coworking.role.model.Role;
@@ -47,7 +48,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
+    /*private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -56,7 +57,10 @@ public class AuthController {
     private final PasswordResetTokenRepository resetTokenRepository;
     private final PasswordResetService passwordResetService;
     private final GoogleAuthService googleAuthService;
-    private  final JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;*/
+
+    private final AuthService authService;
+
 
     //REGISTER
     @Operation(
@@ -68,113 +72,26 @@ public class AuthController {
             }
     )
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
-
-        if (Boolean.FALSE.equals(request.termsAccepted())){
-            return ResponseEntity
-                    .badRequest()
-                    .body("Debe aceptar términos y condiciones");
-        }
-
-        if (userRepository.findByEmail(request.email()).isPresent()){
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of(
-                            "field", "email",
-                            "message", "Correo ya está registrado"
-                    ));
-        }
-
-        //validacion de contrasenia fuerte
-        if(!request.password().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$")){
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of(
-                            "field" , "password",
-                            "message" , "La contraseña debe tener mínimo 8 caracteres, incluir mayúsculas, minúsculas, número y símbolo"
-                    ));
-        }
-
-        // Obtener rol
-        Role role = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Role ROLE_USER no encontrado"));
-
-        // Crear usuario
-        User user = new User();
-        user.setUsername(request.username());
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRoles(Set.of(role));
-        user.setEnabled(false);
-
-        // Guardar
-        userRepository.save(user);
-
-        //token verificacion
-
-        String token = UUID.randomUUID().toString();
-        VerificationToken verificationToken = new VerificationToken(
-                null,
-                token,
-                user,
-                LocalDateTime.now().plusHours(24)
-                );
-
-        tokenRepository.save(verificationToken);
-        emailService.sendVerificationEmail(user.getEmail(), token);
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
         return ResponseEntity.ok(
-                Map.of("message", "Registro exitoso. Revisa tu correo para activar tu cuenta.")
+                Map.of("message", authService.register(request))
         );
     }
     //VERIFY EMAIL
     @GetMapping("/verify")
-    public void verifyAccount(@RequestParam String token, HttpServletResponse response) throws IOException {
-        VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new com.coworking.exception.BadRequestException("Token inválido"));
-
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())){
-            response.sendRedirect("http://localhost:5173/verify-error?reason=expired");
-            return;
-        }
-        User user = verificationToken.getUser();
-        user.setEnabled(true);
-        userRepository.save(user);
-
-        response.sendRedirect("http://localhost:5173/verify-success");
+    public void verify(@RequestParam String token,
+                       HttpServletResponse response) throws IOException {
+        authService.verifyAccount(token, response);
     }
 
     //REENVIAR CORREO DE VERIFICACION
-
     @PostMapping("/resend-verification")
-    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String > request){
-        String email = request.get("email");
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
-        if (user.isEnabled()){
-            return ResponseEntity.badRequest()
-                    .body("La cuenta ya está verificada");
-        }
-
-        tokenRepository.deleteAll(
-                tokenRepository.findAll()
-                        .stream()
-                        .filter(t -> t.getUser().equals(user))
-                        .toList()
+    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String> request){
+        return ResponseEntity.ok(
+                Map.of("message", authService.resendVerification(request.get("email")))
         );
-
-        String token = UUID.randomUUID().toString();
-
-        VerificationToken verificationToken = new VerificationToken(
-                null,
-                token,
-                user,
-                LocalDateTime.now().plusHours(24)
-        );
-        tokenRepository.save(verificationToken);
-        emailService.sendVerificationEmail(user.getEmail(), token);
-        return ResponseEntity.ok("Si el correo existe, se ha reenviado el enlace de verificación");
     }
+
 
     //LOGIN
     @Operation(
@@ -186,124 +103,47 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Credenciales invalidas", content = @Content)
             }
     )
+    //LOGIN
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try{
-            // busca usuario
-            User user = userRepository.findByEmail(request.email())
-                    .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
-
-            //verifica usuario
-            if (!user.isEnabled()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                        Map.of(
-                                "code", "EMAIL_NOT_VERIFIED",
-                                "message", "Tu cuenta no ha sido verificada",
-                                "email", user.getEmail()
-                        )
-                );
-            }
-            // Autenticación
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
-            );
-            // pasamos objeto UserDetails
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            // Generar el token
-            String token = jwtUtil.generateToken(userDetails, user.getUsername(), request.rememberMe());
-
-            //role
-            String role = userDetails.getAuthorities().stream()
-                    .findFirst()
-                    .map(GrantedAuthority::getAuthority) //.map(Role::getName)
-                    .orElse("ROLE_USER");
-
-            return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), role));
-
-        } catch (BadCredentialsException e) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("message", "Correo o contraseña incorrectos"));
-        }
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request){
+        return ResponseEntity.ok(authService.login(request));
     }
-    //user
+    // USER
     @GetMapping("/user")
-    public ResponseEntity<?> getUser(@RequestHeader("authorization") String header){
-        String token =header.replace("Bearer ", "");
-        String email = jwtUtil.extractUsername(token);
-        String username = jwtUtil.extractUsernameUi(token);
-
-        User user = userRepository.findByEmail(email).orElseThrow();
-
-        String role = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("ROLE_USER");
-
-        return ResponseEntity.ok(new AuthResponse(token, username, role));
+    public ResponseEntity<AuthResponse> getUser(@RequestHeader("Authorization") String header){
+        String token = header.replace("Bearer ", "");
+        return ResponseEntity.ok(authService.getUser(token));
     }
 
-    //admin
+    // ADMIN
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Registrar administradores",
-            description = "Crea un nuevo usuario con rol ROLE_ADMIN (solo accesible para usuarios con rol ADMIN)",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Administrador registrado correctamente"),
-                    @ApiResponse(responseCode = "400", description = "Correo ya existe", content = @Content),
-                    @ApiResponse(responseCode = "403", description = "No autorizado (solo ADMIN puede crear otro ADMIN)", content = @Content)
-            }
-    )
-    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody RegisterRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent()) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("message", "Correo ya existe"));
-        }
-
-        User user = new User();
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-
-        // Buscar el rol ADMIN en la base de datos
-        Role roleAdmin = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
-
-        user.setRoles(Set.of(roleAdmin));
-
-        userRepository.save(user);
-        return ResponseEntity.ok(Map.of("message", "Administrador registrado correctamente"));
+    public ResponseEntity<?> registerAdmin(@RequestBody RegisterRequest request){
+        return ResponseEntity.ok(
+                Map.of("message", authService.registerAdmin(request))
+        );
     }
 
-    //endpoint forgot password
+    // FORGOT PASSWORD
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) throws BadRequestException {
-        passwordResetService.sendResetLink(request.getEmail());
-
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) throws BadRequestException {
         return ResponseEntity.ok(
-                Map.of("message", "Se enviará un enlace de recuperación a su correo registrado")
+                Map.of("message", authService.forgotPassword(request))
         );
     }
 
-    //endpoint reset password
+    // RESET PASSWORD
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) throws BadRequestException {
-        passwordResetService.resetPassword(request);
-
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) throws BadRequestException {
         return ResponseEntity.ok(
-                Map.of("message", "Contraseña actualizada correctamente")
+                Map.of("message", authService.resetPassword(request))
         );
     }
 
-    //google auth
-    @PostMapping("/auth/google")
-    public ResponseEntity<AuthResponse> googleAuth(@Valid @RequestBody GoogleAuthRequest request){
-
-        return ResponseEntity.ok(
-                googleAuthService.authenticate(
-                        request.getAccessToken(),
-                        request.isRememberMe())
-        );
+    //GOOGLE AUTH
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest request){
+        return ResponseEntity.ok(authService.googleAuth(request));
     }
+
 }
