@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.coworking.exception.BadRequestException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -220,7 +221,7 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                     FORGOT PASSWORD
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public String forgotPassword(ForgotPasswordRequest request) throws org.apache.coyote.BadRequestException {
+    public String forgotPassword(ForgotPasswordRequest request) {
 
         passwordResetService.sendResetLink(request.getEmail());
 
@@ -230,7 +231,7 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                     RESET PASSWORD
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public String resetPassword(ResetPasswordRequest request) throws org.apache.coyote.BadRequestException {
+    public String resetPassword(ResetPasswordRequest request) {
 
         passwordResetService.resetPassword(request);
 
