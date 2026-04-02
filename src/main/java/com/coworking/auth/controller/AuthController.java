@@ -1,19 +1,17 @@
 package com.coworking.auth.controller;
 import com.coworking.auth.dto.*;
 import com.coworking.auth.model.VerificationToken;
-import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.auth.repository.VerificationTokenRepository;
 import com.coworking.auth.service.AuthService;
+import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.exception.NotFoundException;
-import com.coworking.security.JwtUtil;
 import com.coworking.role.model.Role;
+import com.coworking.security.JwtUtil;
 import com.coworking.user.model.User;
 import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.repository.UserRepository;
 
 import com.coworking.email.service.EmailService;
-import com.coworking.auth.service.GoogleAuthService;
-import com.coworking.auth.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,8 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
-import org.springframework.http.HttpStatus;
+import com.coworking.exception.BadRequestException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,20 +45,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthController {
 
-    /*private final AuthenticationManager authenticationManager;
+    private final AuthService authService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository tokenRepository;
     private final EmailService emailService;
-    private final PasswordResetTokenRepository resetTokenRepository;
-    private final PasswordResetService passwordResetService;
-    private final GoogleAuthService googleAuthService;
-    private final JwtUtil jwtUtil;*/
-
-    private final AuthService authService;
-
-
+    private  final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
     //REGISTER
     @Operation(
             summary = "Registrar usuarios",
@@ -72,9 +63,9 @@ public class AuthController {
             }
     )
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<ApiResponseDto<Void>> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(
-                Map.of("message", authService.register(request))
+                ApiResponseDto.success(authService.register(request))
         );
     }
     //VERIFY EMAIL
@@ -86,12 +77,13 @@ public class AuthController {
 
     //REENVIAR CORREO DE VERIFICACION
     @PostMapping("/resend-verification")
-    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String> request){
+    public ResponseEntity<ApiResponseDto<String>> resendVerification(@RequestBody Map<String, String> request) {
         return ResponseEntity.ok(
-                Map.of("message", authService.resendVerification(request.get("email")))
+                ApiResponseDto.success(
+                        authService.resendVerification(request.get("email"))
+                )
         );
     }
-
 
     //LOGIN
     @Operation(
@@ -105,45 +97,69 @@ public class AuthController {
     )
     //LOGIN
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request){
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<ApiResponseDto<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(
+                ApiResponseDto.success(
+                        "Login exitoso",
+                        authService.login(request)
+                )
+        );
     }
+
     // USER
     @GetMapping("/user")
-    public ResponseEntity<AuthResponse> getUser(@RequestHeader("Authorization") String header){
+    public ResponseEntity<ApiResponseDto<AuthResponse>> getUser(@RequestHeader("Authorization") String header){
+
         String token = header.replace("Bearer ", "");
-        return ResponseEntity.ok(authService.getUser(token));
+
+        return ResponseEntity.ok(
+                ApiResponseDto.success(
+                        "Usuario obtenido",
+                        authService.getUser(token)
+                )
+        );
     }
 
     // ADMIN
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> registerAdmin(@RequestBody RegisterRequest request){
+    public ResponseEntity<ApiResponseDto<String>> registerAdmin(@RequestBody RegisterRequest request) {
         return ResponseEntity.ok(
-                Map.of("message", authService.registerAdmin(request))
+                ApiResponseDto.success(
+                        authService.registerAdmin(request)
+                )
         );
     }
 
     // FORGOT PASSWORD
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) throws BadRequestException {
+    public ResponseEntity<ApiResponseDto<String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(
-                Map.of("message", authService.forgotPassword(request))
+                ApiResponseDto.success(
+                        authService.forgotPassword(request)
+                )
         );
     }
 
     // RESET PASSWORD
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) throws BadRequestException {
+    public ResponseEntity<ApiResponseDto<String>> resetPassword(@RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(
-                Map.of("message", authService.resetPassword(request))
+                ApiResponseDto.success(
+                        authService.resetPassword(request)
+                )
         );
     }
 
     //GOOGLE AUTH
     @PostMapping("/google")
-    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleAuthRequest request){
-        return ResponseEntity.ok(authService.googleAuth(request));
+    public ResponseEntity<ApiResponseDto<AuthResponse>> googleAuth(@RequestBody GoogleAuthRequest request){
+        return ResponseEntity.ok(
+                ApiResponseDto.success(
+                        "Login con Google exitoso",
+                        authService.googleAuth(request)
+                )
+        );
     }
 
 }

@@ -1,5 +1,6 @@
 package com.coworking.exception;
 
+import com.coworking.dto.common.ApiResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.*;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,12 +21,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex,
                                               HttpServletRequest request){
 
-        Map<String, String> errors = ex.getBindingResult()
+        Map<String, List<String>> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .collect(Collectors.toMap(
+                .collect(Collectors.groupingBy(
                         FieldError::getField,
-                        DefaultMessageSourceResolvable::getDefaultMessage
+                        Collectors.mapping(
+                                error -> {
+                                    String msg = error.getDefaultMessage();
+                                    return msg != null ? msg : "Valor inválido";
+                                },
+                                Collectors.toList()
+                        )
                 ));
 
         return ResponseEntity.badRequest().body(errors);
@@ -32,16 +40,18 @@ public class GlobalExceptionHandler {
 
     // BAD REQUEST
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex,
-                                                     HttpServletRequest request){
-        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    public ResponseEntity<ApiResponseDto<Void>> handleBadRequest(BadRequestException ex, HttpServletRequest request){
+        return ResponseEntity.badRequest().body(
+                ApiResponseDto.error(ex.getMessage())
+        );
     }
 
     // NOT FOUND
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(NotFoundException ex,
-                                                   HttpServletRequest request){
-        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    public ResponseEntity<ApiResponseDto<Void>> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                ApiResponseDto.error(ex.getMessage())
+        );
     }
 
     // CONFLICT (reservas)
