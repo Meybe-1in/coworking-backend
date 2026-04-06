@@ -211,5 +211,21 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.message").exists());
     }
 
+    @Test
+    void shouldSendResetLink() throws Exception {
+
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail("test@mail.com");
+
+        when(authService.forgotPassword(any()))
+                .thenReturn("Se enviará un enlace de recuperación a su correo registrado");
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("Se enviará un enlace de recuperación a su correo registrado"));
+    }
 
 }
