@@ -12,6 +12,11 @@ public record RegisterRequest(
         @Email(message = "Formato de email inválido")
         String email,
 
+        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+        @Pattern(
+                regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&]).+$",
+                message = "La contraseña debe tener mayúsculas, minúsculas, número y símbolo"
+        )
         String password,
 
         Boolean termsAccepted
