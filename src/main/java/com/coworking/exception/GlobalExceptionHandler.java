@@ -4,6 +4,7 @@ import com.coworking.dto.common.ApiResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.*;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseDto<Void>> handleBadRequest(BadRequestException ex, HttpServletRequest request){
         return ResponseEntity.badRequest().body(
                 ApiResponseDto.error(ex.getMessage())
+        );
+    }
+
+
+    //BAD CREDENTIAL
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                ApiResponseDto.error("Credenciales incorrectas")
         );
     }
 
