@@ -1,41 +1,38 @@
 package com.coworking.resources.controller;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import com.coworking.auth.dto.AuthResponse;
+import com.coworking.auth.dto.ForgotPasswordRequest;
 import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.auth.repository.VerificationTokenRepository;
+import com.coworking.auth.service.AuthService;
 import com.coworking.email.service.EmailService;
 import com.coworking.auth.service.GoogleAuthService;
 import com.coworking.auth.service.PasswordResetService;
+import com.coworking.exception.BadRequestException;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.coworking.auth.controller.AuthController;
 import com.coworking.auth.dto.LoginRequest;
 import com.coworking.auth.dto.RegisterRequest;
-import com.coworking.role.model.Role;
-import com.coworking.user.model.User;
 import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.repository.UserRepository;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -77,10 +74,14 @@ public class AuthControllerTest {
     @MockitoBean
     private GoogleAuthService googleAuthService;
 
+    @MockitoBean
+    private AuthService authService;
+
     // REGISTER TESTS
 
     @Test
     void shouldRegisterSuccessfully() throws Exception {
+
         RegisterRequest request = new RegisterRequest(
                 "userTest",
                 "test@mail.com",
@@ -88,20 +89,8 @@ public class AuthControllerTest {
                 true
         );
 
-        Role role = new Role();
-        role.setName("ROLE_USER");
-
-        Mockito.when(userRepository.findByEmail("test@mail.com"))
-                .thenReturn(Optional.empty());
-
-        Mockito.when(roleRepository.findByName("ROLE_USER"))
-                .thenReturn(Optional.of(role));
-
-        Mockito.when(passwordEncoder.encode("Aa123456!"))
-                .thenReturn("encodedPass");
-
-        Mockito.when(jwtUtil.generateToken(any(UserDetails.class), eq("userTest"), anyBoolean()))
-                .thenReturn("fake-jwt");
+        when(authService.register(any()))
+                .thenReturn("Registro exitoso. Revisa tu correo para activar tu cuenta.");
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,22 +102,43 @@ public class AuthControllerTest {
 
     @Test
     void shouldReturn400WhenEmailAlreadyExists() throws Exception {
+
         RegisterRequest request = new RegisterRequest(
-                "other",
-                "duplicate@mail.com",
-                "12345678",
+                "userTest",
+                "test@mail.com",
+                "Aa123456!",
                 true
         );
 
-        Mockito.when(userRepository.findByEmail("duplicate@mail.com"))
-                .thenReturn(Optional.of(new User()));
+        when(authService.register(any()))
+                .thenThrow(new BadRequestException("Correo ya está registrado"));
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.field").value("email"))
-                .andExpect(jsonPath("$.message").value("Correo ya está registrado"));
+                .andExpect(jsonPath("$.message")
+                        .value("Correo ya está registrado"));
+    }
+
+    @Test
+    void shouldReturn400WhenEmailNotVerified() throws Exception {
+
+        LoginRequest request = new LoginRequest(
+                "test@mail.com",
+                "Aa123456!",
+                false
+        );
+
+        when(authService.login(any()))
+                .thenThrow(new BadRequestException("EMAIL_NOT_VERIFIED"));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("EMAIL_NOT_VERIFIED"));
     }
 
     @Test
@@ -147,69 +157,81 @@ public class AuthControllerTest {
     }
 
     // LOGIN TESTS
-
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        LoginRequest request = new LoginRequest("login@mail.com", "123456", false);
 
-        User user = new User();
-        user.setUsername("loginUser");
-        user.setEmail("login@mail.com");
-        user.setEnabled(true);
-        user.setRoles(Set.of(new Role("ROLE_USER")));
+        LoginRequest request = new LoginRequest(
+                "test@mail.com",
+                "Aa123456!",
+                false
+        );
 
-        Authentication authMock = Mockito.mock(Authentication.class);
+        AuthResponse response = new AuthResponse("token", "userTest", "ROLE_USER");
 
-        Mockito.when(authenticationManager.authenticate(any()))
-                .thenReturn(authMock);
-
-        Mockito.when(userRepository.findByEmail("login@mail.com"))
-                .thenReturn(Optional.of(user));
-
-        Mockito.when(jwtUtil.generateToken(any(UserDetails.class), eq("loginUser"), eq(false)))
-                .thenReturn("jwt-login");
-
-        UserDetails springUser =
-                new org.springframework.security.core.userdetails.User(
-                        "login@mail.com",
-                        "encoded",
-                        List.of()
-                );
-
-        Mockito.when(authMock.getPrincipal()).thenReturn(springUser);
+        when(authService.login(any()))
+                .thenReturn(response);
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Login exitoso"))
+                .andExpect(jsonPath("$.data.token").value("token"));
     }
 
 
     @Test
     void shouldReturn401WhenBadCredentials() throws Exception {
-        LoginRequest request = new LoginRequest("wrong@mail.com", "fail", false);
 
-        Mockito.when(authenticationManager.authenticate(any()))
-                .thenThrow(new BadCredentialsException("Bad creds"));
+        LoginRequest request = new LoginRequest(
+                "test@mail.com",
+                "wrongpass",
+                false
+        );
+
+        when(authService.login(any()))
+                .thenThrow(new BadCredentialsException("Credenciales incorrectas"));
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Correo o contraseña incorrectos"));
+                .andExpect(jsonPath("$.message")
+                        .value("Credenciales incorrectas"));
     }
 
     @Test
     void shouldReturn400WhenPasswordIsWeak() throws Exception {
-        RegisterRequest request = new RegisterRequest("User", "email@test.com", "12345", true);
+
+        RegisterRequest request = new RegisterRequest(
+                "User",
+                "email@test.com",
+                "12345",
+                true
+        );
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.field").value("password"))
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.password").exists());
     }
 
+    @Test
+    void shouldSendResetLink() throws Exception {
+
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail("test@mail.com");
+
+        when(authService.forgotPassword(any()))
+                .thenReturn("Se enviará un enlace de recuperación a su correo registrado");
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("Se enviará un enlace de recuperación a su correo registrado"));
+    }
 
 }

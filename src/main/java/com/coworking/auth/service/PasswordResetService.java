@@ -3,11 +3,11 @@ package com.coworking.auth.service;
 import com.coworking.auth.dto.ResetPasswordRequest;
 import com.coworking.email.service.EmailService;
 import com.coworking.auth.model.PasswordResetToken;
+import com.coworking.exception.BadRequestException;
 import com.coworking.user.model.User;
 import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
