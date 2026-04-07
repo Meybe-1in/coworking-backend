@@ -3,8 +3,8 @@ package com.coworking.resources.service;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
-import com.coworking.storage.service.FileStorageService;
 import com.coworking.room.service.RoomService;
+import com.coworking.storage.service.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,7 @@ class RoomServiceTest {
     private RoomRepository roomRepository;
 
     @Mock
-    private FileStorageService fileStorageService;
+    private StorageService storageService;
 
     @InjectMocks
     private RoomService roomService;
@@ -101,7 +101,7 @@ class RoomServiceTest {
         assertEquals("Sala 1", result.getName());
         assertNull(result.getImageUrl());
         // Verifica que NO se llamó al servicio de almacenamiento
-        verify(fileStorageService, never()).storeFile(any(MultipartFile.class));
+        verify(storageService, never()).upload(any(MultipartFile.class));
     }
 
     @Test
@@ -114,7 +114,7 @@ class RoomServiceTest {
         );
         String expectedUrl = "/uploads/test-unique-id.jpg";
         // Mock: El servicio de almacenamiento devuelve la URL
-        when(fileStorageService.storeFile(mockImage)).thenReturn(expectedUrl);
+        when(storageService.upload(mockImage)).thenReturn(expectedUrl);
         // Mock: Simula la entidad devuelta al guardar
         Room roomSaved = new Room();
         roomSaved.setId(2L);
@@ -126,7 +126,7 @@ class RoomServiceTest {
         assertNotNull(result);
         assertEquals(expectedUrl, result.getImageUrl());
         // Verifica que SÍ se llamó al servicio de almacenamiento
-        verify(fileStorageService, times(1)).storeFile(mockImage);
+        verify(storageService, times(1)).upload(mockImage);
     }
     @Test
     void updateRoom_updatesExistingRoom() {
