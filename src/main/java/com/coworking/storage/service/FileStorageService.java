@@ -8,10 +8,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
-public class FileStorageService {
+public class FileStorageService implements StorageService {
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -28,8 +29,9 @@ public class FileStorageService {
         }
     }
 
-    public String storeFile(MultipartFile file) {
-        String original = StringUtils.cleanPath(file.getOriginalFilename());
+    @Override
+    public String upload(MultipartFile file) {
+        String original = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         // extensión (si existe)
         String ext = "";
         int i = original.lastIndexOf('.');
@@ -53,9 +55,5 @@ public class FileStorageService {
         } catch (IOException ex) {
             throw new RuntimeException("Fallo al almacenar archivo " + original, ex);
         }
-    }
-
-    public Path loadPath(String filename) {
-        return rootLocation.resolve(filename).normalize();
     }
 }
