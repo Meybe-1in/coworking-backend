@@ -77,7 +77,7 @@ class ReservationServiceTest {
         saved.setUser(user);
         saved.setStartAt(request.getStartAt());
         saved.setEndAt(request.getEndAt());
-        saved.setStatus(ReservationStatus.CONFIRMED);
+        saved.setStatus(ReservationStatus.PENDING);
 
         when(reservationRepository.save(any(Reservation.class))).thenReturn(saved);
 
@@ -88,7 +88,7 @@ class ReservationServiceTest {
         assertNotNull(response);
         assertEquals("Sala A", response.getRoomName());
         assertEquals("p1@email.com", response.getUsername());
-        assertEquals(ReservationStatus.CONFIRMED, response.getStatus());
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
         verify(reservationRepository, times(1)).save(any(Reservation.class));
     }
 
