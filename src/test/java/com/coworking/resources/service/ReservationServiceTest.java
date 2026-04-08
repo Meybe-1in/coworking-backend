@@ -13,11 +13,15 @@ import com.coworking.user.repository.UserRepository;
 import com.coworking.reservation.service.ReservationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,12 +38,22 @@ class ReservationServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private Clock clock;
+
     @InjectMocks
     private ReservationService reservationService;
 
     private User user;
     private Room room;
     private ReservationRequest request;
+
+    private Instant elSalvadorTime(int hour) {
+        return ZonedDateTime.of(
+                2025, 1, 1, hour, 0, 0, 0,
+                ZoneId.of("America/El_Salvador")
+        ).toInstant();
+    }
 
     @BeforeEach
     void setUp() {
@@ -52,11 +66,15 @@ class ReservationServiceTest {
         room = new Room();
         room.setId(2L);
         room.setName("Sala A");
+        room.setPrice(10.0);
+
+        when(clock.instant()).thenReturn(Instant.parse("2025-01-01T10:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
         request = new ReservationRequest();
         request.setRoomId(room.getId());
-        request.setStartAt(Instant.parse("2025-10-01T10:00:00Z"));
-        request.setEndAt(Instant.parse("2025-10-01T12:00:00Z"));
+        request.setStartAt(elSalvadorTime(9)); // 09:00 AM local
+        request.setEndAt(elSalvadorTime(11));   // 11:00 AM local
     }
 
     @Test
@@ -71,25 +89,54 @@ class ReservationServiceTest {
                 anyLong(), anyLong(), any(), any())
         ).thenReturn(Optional.empty());
 
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0)); // devuelve lo guardado
+
+        ReservationResponse response =
+                reservationService.createReservation(user.getId(), request);
+
         Reservation saved = new Reservation();
         saved.setId(99L);
         saved.setRoom(room);
         saved.setUser(user);
         saved.setStartAt(request.getStartAt());
         saved.setEndAt(request.getEndAt());
-        saved.setStatus(ReservationStatus.CONFIRMED);
+        saved.setStatus(ReservationStatus.PENDING);
+        saved.setPrice(20.0);
 
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(saved);
-
-        // When
-        ReservationResponse response = reservationService.createReservation(user.getId(), request);
-
-        // Then
         assertNotNull(response);
         assertEquals("Sala A", response.getRoomName());
         assertEquals("p1@email.com", response.getUsername());
-        assertEquals(ReservationStatus.CONFIRMED, response.getStatus());
-        verify(reservationRepository, times(1)).save(any(Reservation.class));
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
+
+        verify(reservationRepository).save(any(Reservation.class));
+    }
+    @Test
+    void createReservation_shouldCalculatePrice() {
+        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(reservationRepository.findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any()))
+                .thenReturn(Collections.emptyList());
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
+                anyLong(), anyLong(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        ArgumentCaptor<Reservation> captor = ArgumentCaptor.forClass(Reservation.class);
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationResponse response =
+                reservationService.createReservation(user.getId(), request);
+
+        verify(reservationRepository).save(captor.capture());
+
+        Reservation saved = captor.getValue();
+
+        // 2 horas * 10 = 20
+        assertEquals(20.0, saved.getPrice());
+        assertEquals(20.0, response.getPrice());
     }
 
     @Test
@@ -127,8 +174,10 @@ class ReservationServiceTest {
     //Validacion de horario invalido
     @Test
     void createReservation_invalidHour_throwsException() {
-        request.setStartAt(Instant.parse("2025-10-01T10:00:00Z"));
-        request.setEndAt(Instant.parse("2025-10-01T12:00:00Z"));
+        // 04:00 AM en El Salvador (fuera de horario permitido)
+        request.setStartAt(elSalvadorTime(5));
+        request.setEndAt(elSalvadorTime(6));
+
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 

@@ -6,7 +6,7 @@ import com.coworking.reservation.model.Reservation;
 import com.coworking.room.model.Room;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.room.repository.RoomRepository;
-import com.coworking.storage.service.FileStorageService;
+import com.coworking.storage.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
-    private final FileStorageService fileStorageService;
+    private final StorageService storageService;
     // MAPPERS
 
     private RoomDto mapToDto(Room room){
@@ -93,7 +93,7 @@ public class RoomService {
         Room room = mapToEntity(dto);
 
         if(image != null && !image.isEmpty()){
-            String imageUrl = fileStorageService.storeFile(image);
+            String imageUrl = storageService.upload(image);
             room.setImageUrl(imageUrl);
         }
 

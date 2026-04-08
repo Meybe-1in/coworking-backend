@@ -13,5 +13,7 @@ public class ReservationResponse {
     private String username;
     private Instant startAt;
     private Instant endAt;
+    private Double price;
     private ReservationStatus status;
+
 }

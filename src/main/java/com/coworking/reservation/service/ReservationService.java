@@ -27,6 +27,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     public ReservationResponse createReservation(Long userId, ReservationRequest request){
         Room room = roomRepository.findById(request.getRoomId())
@@ -59,14 +60,20 @@ public class ReservationService {
         reservation.setUser(user);
         reservation.setStartAt(start);
         reservation.setEndAt(end);
-        reservation.setStatus(ReservationStatus.CONFIRMED);
+        reservation.setStatus(ReservationStatus.PENDING);
+
+        double hours = Duration.between(start, end).toMinutes() / 60.0;
+        if (hours <= 0){
+            throw new ReservationConflictException("Duración inválida");
+        }
+        reservation.setPrice(room.getPrice() * hours);
 
         Reservation saved = reservationRepository.save(reservation);
         return mapToResponse(saved);
     }
 
     private void validateReservationTimes(Instant start, Instant end){
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
 
         // evitar horas pasadas
         if (start.isBefore(now)) {
@@ -103,6 +110,7 @@ public class ReservationService {
         dto.setStartAt(reservation.getStartAt());
         dto.setEndAt(reservation.getEndAt());
         dto.setStatus(reservation.getStatus());
+        dto.setPrice(reservation.getPrice());
         return dto;
     }
 

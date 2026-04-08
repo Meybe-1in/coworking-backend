@@ -37,6 +37,9 @@ public class Reservation {
 
     private String notes;
 
+    @Column(nullable = false)
+    private Double price;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status = ReservationStatus.PENDING;
