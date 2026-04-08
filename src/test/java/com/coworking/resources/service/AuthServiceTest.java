@@ -3,11 +3,12 @@ package com.coworking.resources.service;
 import com.coworking.auth.dto.ForgotPasswordRequest;
 import com.coworking.auth.dto.LoginRequest;
 import com.coworking.auth.dto.RegisterRequest;
-import com.coworking.auth.repository.PasswordResetTokenRepository;
+import com.coworking.auth.model.VerificationToken;
 import com.coworking.auth.repository.VerificationTokenRepository;
 import com.coworking.auth.service.AuthService;
 import com.coworking.auth.service.PasswordResetService;
-import com.coworking.email.service.EmailService;
+import com.coworking.domain.notification.EmailSender;
+import com.coworking.email.template.EmailTemplate;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.role.model.Role;
@@ -15,6 +16,7 @@ import com.coworking.role.repository.RoleRepository;
 import com.coworking.security.JwtUtil;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -22,6 +24,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +38,7 @@ class AuthServiceTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private PasswordResetService passwordResetService;
     @Mock private VerificationTokenRepository verificationTokenRepository;
-    @Mock private EmailService emailService;
+    @Mock private EmailSender emailSender;
     @Mock private AuthenticationManager authenticationManager;
     @Mock private JwtUtil jwtUtil;
 
@@ -68,6 +71,12 @@ class AuthServiceTest {
         String result = authService.register(request);
 
         assertEquals("Registro exitoso. Revisa tu correo para activar tu cuenta.", result);
+        verify(emailSender).send(
+                eq("test@mail.com"),
+                eq("Verifica tu cuenta"),
+                eq(EmailTemplate.VERIFY_ACCOUNT.getPath()),
+                argThat(map -> map.containsKey("link"))
+        );
         verify(userRepository).save(any(User.class));
     }
     //LOGIN
@@ -148,6 +157,73 @@ class AuthServiceTest {
                 () -> authService.register(request));
     }
 
+    @Test
+    void shouldResendVerificationEmail() {
+
+        User user = new User();
+        user.setEmail("test@mail.com");
+        user.setEnabled(false);
+
+        when(userRepository.findByEmail("test@mail.com"))
+                .thenReturn(Optional.of(user));
+
+        String result = authService.resendVerification("test@mail.com");
+
+        verify(verificationTokenRepository).save(any());
+        verify(emailSender).send(
+                eq("test@mail.com"),
+                eq("Verifica tu cuenta"),
+                eq(EmailTemplate.VERIFY_ACCOUNT.getPath()),
+                anyMap()
+        );
+
+        assertEquals("Reenvio exitoso. Revisa tu correo para activar tu cuenta.", result);
+    }
+
+    @Test
+    void shouldEnableUserWhenTokenValid() throws Exception {
+
+        User user = new User();
+        user.setEnabled(false);
+
+        VerificationToken token = new VerificationToken(
+                null,
+                "token",
+                user,
+                LocalDateTime.now().plusHours(1)
+        );
+
+        when(verificationTokenRepository.findByToken("token"))
+                .thenReturn(Optional.of(token));
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        authService.verifyAccount("token", response);
+
+        assertTrue(user.isEnabled());
+        verify(userRepository).save(user);
+        verify(response).sendRedirect(contains("verify-success"));
+    }
+
+    @Test
+    void shouldRedirectWhenTokenExpired() throws Exception {
+
+        VerificationToken token = new VerificationToken(
+                null,
+                "token",
+                new User(),
+                LocalDateTime.now().minusHours(1)
+        );
+
+        when(verificationTokenRepository.findByToken("token"))
+                .thenReturn(Optional.of(token));
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        authService.verifyAccount("token", response);
+
+        verify(response).sendRedirect(contains("expired"));
+    }
     // PASSWORD
 
     @Test

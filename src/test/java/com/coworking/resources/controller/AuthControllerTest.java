@@ -15,6 +15,7 @@ import com.coworking.email.service.EmailService;
 import com.coworking.auth.service.GoogleAuthService;
 import com.coworking.auth.service.PasswordResetService;
 import com.coworking.exception.BadRequestException;
+import com.coworking.user.model.User;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,8 @@ import com.coworking.user.repository.UserRepository;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.util.Optional;
 
 
 @WebMvcTest(AuthController.class)
@@ -63,13 +66,7 @@ public class AuthControllerTest {
     private VerificationTokenRepository verificationTokenRepository;
 
     @MockitoBean
-    private EmailService emailService;
-
-    @MockitoBean
     private PasswordResetTokenRepository passwordResetTokenRepository;
-
-    @MockitoBean
-    private PasswordResetService passwordResetService;
 
     @MockitoBean
     private GoogleAuthService googleAuthService;
