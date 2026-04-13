@@ -4,6 +4,7 @@ import com.coworking.domain.notification.EmailSender;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.mapping.Map;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -12,7 +13,7 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor @Slf4j
 public class EmailService implements EmailSender {
 
     private final JavaMailSender mailSender;
@@ -23,7 +24,13 @@ public class EmailService implements EmailSender {
         Context context = new Context();
         context.setVariables(variables);
 
-        String html = templateEngine.process(template, context);
+        String html;
+        try {
+            html = templateEngine.process(template, context);
+        } catch (Exception e) {
+            log.error("Error procesando template: {}", template, e);
+            throw new RuntimeException(e);
+        }
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -37,7 +44,8 @@ public class EmailService implements EmailSender {
             mailSender.send(message);
 
         } catch (MessagingException e) {
-            throw new RuntimeException("Error enviando correo", e);
+            log.error("Error enviando correo", e);
+            throw new RuntimeException(e);
         }
     }
 }
