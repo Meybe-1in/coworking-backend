@@ -37,7 +37,6 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository tokenRepository;
-    private final EmailService emailService;
     private  final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     //REGISTER
