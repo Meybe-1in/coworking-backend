@@ -38,9 +38,6 @@ public class Reservation {
 
     private String notes;
 
-    /*@Column(nullable = false)
-    private Double price;*/
-
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
