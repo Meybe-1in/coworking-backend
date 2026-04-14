@@ -3,6 +3,7 @@ package com.coworking.room.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -24,7 +25,7 @@ public class RoomDto {
     private boolean available;
 
     @Schema(description = "Precio por hora", example = "5.0")
-    private Double price;
+    private BigDecimal price;
 
     @Schema(description = "URL de imagen", example = "https://example.com/room.jpg")
     private String imageUrl;

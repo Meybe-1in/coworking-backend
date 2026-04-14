@@ -19,9 +19,6 @@ public class ReservationRequest {
     @NotNull(message = "La fecha de finalización es obligatoria")
     private Instant endAt;
 
-    @NotNull(message = "Precio es obligatorio")
-    private  Double price;
-
     @NotBlank
-    private String note;
+    private String notes;
 }

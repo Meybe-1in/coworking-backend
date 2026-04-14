@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 import java.time.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 
 @Service
 @AllArgsConstructor
@@ -30,9 +33,10 @@ public class ReservationService {
     private final Clock clock;
 
     public ReservationResponse createReservation(Long userId, ReservationRequest request){
+        //buscar sala
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new NotFoundException("Sala no encontrada"));
-
+        //buscar usuario
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
@@ -53,6 +57,25 @@ public class ReservationService {
         if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start , end).isPresent())
             throw new ReservationConflictException("Ya tienes una reserva igual");
 
+        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+        //                     CALCULO DE PRECIO
+        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+        //duración en minutos
+        long minutes = Duration.between(start, end).toMinutes();
+
+        if (minutes <= 0) {
+            throw new ReservationConflictException("Duración inválida");
+        }
+
+        // convertir minutos a horas con precisión
+        BigDecimal hours = BigDecimal.valueOf(minutes)
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+        // precio total = precio por hora * horas
+        BigDecimal totalPrice = room.getPrice().multiply(hours);
+
+        // redondear a 2 decimales (dinero)
+        totalPrice = totalPrice.setScale(2, RoundingMode.HALF_UP);
 
         //crear reserva
         Reservation reservation = new Reservation();
@@ -61,12 +84,8 @@ public class ReservationService {
         reservation.setStartAt(start);
         reservation.setEndAt(end);
         reservation.setStatus(ReservationStatus.PENDING);
-
-        double hours = Duration.between(start, end).toMinutes() / 60.0;
-        if (hours <= 0){
-            throw new ReservationConflictException("Duración inválida");
-        }
-        reservation.setPrice(room.getPrice() * hours);
+        reservation.setPrice(totalPrice);
+        reservation.setNotes(request.getNotes());
 
         Reservation saved = reservationRepository.save(reservation);
         return mapToResponse(saved);

@@ -4,6 +4,7 @@ import com.coworking.reservation.model.ReservationStatus;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter @Setter
@@ -13,7 +14,7 @@ public class ReservationResponse {
     private String username;
     private Instant startAt;
     private Instant endAt;
-    private Double price;
+    private BigDecimal price;
     private ReservationStatus status;
 
 }

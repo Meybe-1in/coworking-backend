@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
@@ -37,8 +38,11 @@ public class Reservation {
 
     private String notes;
 
-    @Column(nullable = false)
-    private Double price;
+    /*@Column(nullable = false)
+    private Double price;*/
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
