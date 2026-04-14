@@ -17,8 +17,8 @@ public record RegisterRequest(
 
         @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         @Pattern(
-                regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&]).+$",
-                message = "La contraseña debe tener mayúsculas, minúsculas, número y símbolo"
+                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$",
+                message = "La contraseña debe contener mayúscula, minúscula, número y símbolo"
         )
         String password,
 
