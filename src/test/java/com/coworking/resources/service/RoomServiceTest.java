@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,7 +46,7 @@ class RoomServiceTest {
         room.setDescription("Sala grande");
         room.setCapacity(10);
         room.setAvailable(true);
-        room.setPrice(10.0);
+        room.setPrice(new BigDecimal("10.00"));
         room.setLocation("Ubicación Test");
         room.setFeatures(List.of("Wifi", "Pizarra"));
         // URL de imagen de prueba
@@ -57,7 +58,7 @@ class RoomServiceTest {
         baseRoomDto.setDescription("Sala grande");
         baseRoomDto.setCapacity(10);
         baseRoomDto.setAvailable(true);
-        baseRoomDto.setPrice(10.0);
+        baseRoomDto.setPrice(new BigDecimal("10.00"));
         baseRoomDto.setLocation("Ubicación Test");
         baseRoomDto.setFeatures(List.of("Wifi", "Pizarra"));
         baseRoomDto.setImageUrl("/uploads/mock-image.jpg");
@@ -91,6 +92,7 @@ class RoomServiceTest {
         Room roomToReturn = new Room();
         roomToReturn.setId(2L);
         roomToReturn.setName(baseRoomDto.getName());
+        roomToReturn.setPrice(baseRoomDto.getPrice());
 
         when(roomRepository.save(any(Room.class))).thenReturn(roomToReturn);
 
@@ -99,6 +101,7 @@ class RoomServiceTest {
         assertNotNull(result);
         assertEquals(2L, result.getId());
         assertEquals("Sala 1", result.getName());
+        assertEquals(new BigDecimal("10.00"), result.getPrice());
         assertNull(result.getImageUrl());
         // Verifica que NO se llamó al servicio de almacenamiento
         verify(storageService, never()).upload(any(MultipartFile.class));
@@ -136,6 +139,7 @@ class RoomServiceTest {
         dto.setName("Sala modificada");
         dto.setDescription("Actualizada");
         dto.setCapacity(15);
+        dto.setPrice(new BigDecimal("15.00"));
         dto.setAvailable(false);
         // Mantenemos la URL existente o la omitimos si el DTO no la incluye
         dto.setImageUrl(room.getImageUrl());
@@ -147,8 +151,18 @@ class RoomServiceTest {
         assertTrue(result.isPresent());
         assertEquals("Sala modificada", result.get().getName());
         assertEquals(15, result.get().getCapacity());
+        assertEquals(new BigDecimal("15.00"), result.get().getPrice());
         // Verificamos que la URL de imagen no se perdió si se incluyó en el DTO
         assertEquals("/uploads/mock-image.jpg", result.get().getImageUrl());
+    }
+
+    @Test
+    void getRoomById_notFound_returnsEmpty() {
+        when(roomRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<RoomDto> result = roomService.getRoomById(1L);
+
+        assertTrue(result.isEmpty());
     }
 
     @Test

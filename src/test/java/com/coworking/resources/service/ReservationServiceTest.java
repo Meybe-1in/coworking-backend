@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -66,7 +67,7 @@ class ReservationServiceTest {
         room = new Room();
         room.setId(2L);
         room.setName("Sala A");
-        room.setPrice(10.0);
+        room.setPrice(BigDecimal.valueOf(10.0));
 
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T10:00:00Z"));
         when(clock.getZone()).thenReturn(ZoneId.systemDefault());
@@ -102,7 +103,7 @@ class ReservationServiceTest {
         saved.setStartAt(request.getStartAt());
         saved.setEndAt(request.getEndAt());
         saved.setStatus(ReservationStatus.PENDING);
-        saved.setPrice(20.0);
+        saved.setPrice(BigDecimal.valueOf(20.0));
 
         assertNotNull(response);
         assertEquals("Sala A", response.getRoomName());
@@ -135,8 +136,8 @@ class ReservationServiceTest {
         Reservation saved = captor.getValue();
 
         // 2 horas * 10 = 20
-        assertEquals(20.0, saved.getPrice());
-        assertEquals(20.0, response.getPrice());
+        assertEquals(new BigDecimal("20.00"), saved.getPrice());
+        assertEquals(new BigDecimal("20.00"), response.getPrice());
     }
 
     @Test
