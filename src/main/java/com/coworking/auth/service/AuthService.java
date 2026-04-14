@@ -3,7 +3,9 @@ package com.coworking.auth.service;
 import com.coworking.auth.dto.*;
 import com.coworking.auth.model.VerificationToken;
 import com.coworking.auth.repository.VerificationTokenRepository;
+import com.coworking.domain.notification.EmailSender;
 import com.coworking.email.service.EmailService;
+import com.coworking.email.template.EmailTemplate;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.role.model.Role;
@@ -18,8 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.coworking.exception.BadRequestException;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,7 +35,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository tokenRepository;
-    private final EmailService emailService;
+    private final EmailSender emailSender;
     private final JwtUtil jwtUtil;
     private final PasswordResetService passwordResetService;
     private final GoogleAuthService googleAuthService;
@@ -41,17 +43,17 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                         REGISTER
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public String register(RegisterRequest request){
+    public String register(RegisterRequest request) {
 
-        if (Boolean.FALSE.equals(request.termsAccepted())){
+        if (Boolean.FALSE.equals(request.termsAccepted())) {
             throw new BadRequestException("Debe aceptar términos y condiciones");
         }
 
-        if (userRepository.findByEmail(request.email()).isPresent()){
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new BadRequestException("Correo ya está registrado");
         }
 
-        if(!request.password().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$")){
+        if (!request.password().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$")) {
             throw new BadRequestException("Contraseña débil");
         }
 
@@ -78,7 +80,14 @@ public class AuthService {
 
         tokenRepository.save(verificationToken);
 
-        emailService.sendVerificationEmail(user.getEmail(), token);
+        String link = "http://localhost:8080/auth/verify?token=" + token;
+
+        emailSender.send(
+                user.getEmail(),
+                "Verifica tu cuenta",
+                EmailTemplate.VERIFY_ACCOUNT.getPath(),
+                Map.of("link", link)
+        );
 
         return "Registro exitoso. Revisa tu correo para activar tu cuenta.";
     }
@@ -93,7 +102,7 @@ public class AuthService {
         VerificationToken verificationToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Token inválido"));
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())){
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             response.sendRedirect("http://localhost:5173/verify-error?reason=expired");
             return;
         }
@@ -105,15 +114,15 @@ public class AuthService {
         response.sendRedirect("http://localhost:5173/verify-success");
     }
 
-   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-   //                         LOGIN
-   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public AuthResponse login(LoginRequest request){
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                         LOGIN
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    public AuthResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
 
-        if (!user.isEnabled()){
+        if (!user.isEnabled()) {
             throw new BadRequestException("EMAIL_NOT_VERIFIED");
         }
 
@@ -143,7 +152,7 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                         GET USER
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public AuthResponse getUser(String token){
+    public AuthResponse getUser(String token) {
 
         String email = jwtUtil.extractUsername(token);
         String username = jwtUtil.extractUsernameUi(token);
@@ -162,12 +171,12 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                    RESEND VERIFICATION
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public String resendVerification(String email){
+    public String resendVerification(String email) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
-        if (user.isEnabled()){
+        if (user.isEnabled()) {
             throw new BadRequestException("La cuenta ya está verificada");
         }
 
@@ -190,17 +199,22 @@ public class AuthService {
 
         tokenRepository.save(verificationToken);
 
-        emailService.sendVerificationEmail(user.getEmail(), token);
-
-        return "Se ha reenviado el enlace de verificación";
+        String link = "http://localhost:8080/auth/verify?token=" + token;
+        emailSender.send(
+                user.getEmail(),
+                "Verifica tu cuenta",
+                EmailTemplate.VERIFY_ACCOUNT.getPath(),
+                Map.of("link", link)
+        );
+        return "Reenvio exitoso. Revisa tu correo para activar tu cuenta.";
     }
 
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                     REGISTER ADMIN
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public String registerAdmin(RegisterRequest request){
+    public String registerAdmin(RegisterRequest request) {
 
-        if (userRepository.findByEmail(request.email()).isPresent()){
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new BadRequestException("Correo ya existe");
         }
 
@@ -241,7 +255,7 @@ public class AuthService {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                     GOOGLE AUTH
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    public AuthResponse googleAuth(GoogleAuthRequest request){
+    public AuthResponse googleAuth(GoogleAuthRequest request) {
 
         return googleAuthService.authenticate(
                 request.getAccessToken(),
