@@ -131,6 +131,15 @@ class RoomServiceTest {
         // Verifica que SÍ se llamó al servicio de almacenamiento
         verify(storageService, times(1)).upload(mockImage);
     }
+
+    @Test
+    void shouldAdd_features() {
+        Room room = new Room();
+        room.setFeatures(List.of("Wifi", "Aire acondicionado"));
+
+        assertEquals(2, room.getFeatures().size());
+    }
+
     @Test
     void updateRoom_updatesExistingRoom() {
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
