@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -28,7 +29,9 @@ public class Room {
 
     private boolean available = true;
 
-    private Double price;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
     private String imageUrl;
     @ElementCollection
     private List<String> features;
