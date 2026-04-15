@@ -29,7 +29,8 @@ public class PasswordResetToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @JoinColumn(nullable = false)
+    // @JoinColumn(nullable = false)
+    @Column(nullable = false)
     private LocalDateTime expiryDate;
 
     //metodos
@@ -42,7 +43,7 @@ public class PasswordResetToken {
         );
     }
 
-    public boolean isExpired(){
+    public boolean isExpired() {
         return expiryDate.isBefore(LocalDateTime.now());
     }
 
