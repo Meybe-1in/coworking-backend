@@ -112,6 +112,14 @@ class ReservationServiceTest {
 
         verify(reservationRepository).save(any(Reservation.class));
     }
+
+    @Test
+    void save_status_string() {
+        Reservation reservation = new Reservation();
+        reservation.setStatus(ReservationStatus.PAID);
+
+        assertEquals(ReservationStatus.PAID, reservation.getStatus());
+    }
     @Test
     void createReservation_shouldCalculatePrice() {
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));

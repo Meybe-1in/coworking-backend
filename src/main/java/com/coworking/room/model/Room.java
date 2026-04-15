@@ -22,6 +22,7 @@ public class Room {
     @Column(nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false)
@@ -33,8 +34,12 @@ public class Room {
     private BigDecimal price;
 
     private String imageUrl;
+
     @ElementCollection
+    @CollectionTable(name = "room_features", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "feature")
     private List<String> features;
+
     private String location;
 
 }

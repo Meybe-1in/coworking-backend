@@ -36,6 +36,7 @@ public class Reservation {
     @Column(nullable = false)
     private Instant endAt;
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
     @Column(nullable = false, precision = 10, scale = 2)

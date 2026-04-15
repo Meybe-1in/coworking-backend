@@ -3,6 +3,7 @@ package com.coworking.resources.service;
 import com.coworking.auth.dto.ForgotPasswordRequest;
 import com.coworking.auth.dto.LoginRequest;
 import com.coworking.auth.dto.RegisterRequest;
+import com.coworking.auth.model.PasswordResetToken;
 import com.coworking.auth.model.VerificationToken;
 import com.coworking.auth.repository.VerificationTokenRepository;
 import com.coworking.auth.service.AuthService;
@@ -266,5 +267,18 @@ class AuthServiceTest {
 
         assertThrows(BadRequestException.class,
                 () -> authService.register(request));
+    }
+
+    @Test
+    void shouldThrowWhen_tokenExpired() {
+        User user = new User();
+        PasswordResetToken token = new PasswordResetToken(
+                null,
+                "test",
+                user,
+                LocalDateTime.now().minusHours(1)
+        );
+
+        assertTrue(token.isExpired());
     }
 }
