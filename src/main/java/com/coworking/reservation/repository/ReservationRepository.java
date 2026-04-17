@@ -1,7 +1,11 @@
 package com.coworking.reservation.repository;
 
 import com.coworking.reservation.model.Reservation;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -18,16 +22,38 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             Instant start
     );
 
-   //verificar si tiene reserva identica
-   Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAt(
-           Long userId,
-           Long roomId,
-           Instant start,
-           Instant end
-   );
+    //verificar si tiene reserva identica
+    Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAt(
+            Long userId,
+            Long roomId,
+            Instant start,
+            Instant end
+    );
 
     List<Reservation> findByStartAtLessThanAndEndAtGreaterThan(
             Instant end,
             Instant start);
+
+    //overlapping
+    boolean existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+            Long roomId,
+            Instant endAt,
+            Instant startAt
+
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+                SELECT r FROM Reservation r
+                WHERE r.room.id = :roomId
+                AND r.startAt < :endAt
+                AND r.endAt > :startAt
+            """)
+    List<Reservation> findOverlappingForUpdate(
+            @Param("roomId") Long roomId,
+            @Param("startAt") Instant startAt,
+            @Param("endAt") Instant endAt
+    );
+
 
 }
