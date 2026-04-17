@@ -15,6 +15,7 @@ import com.coworking.room.repository.RoomRepository;
 import com.coworking.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.util.List;
@@ -32,7 +33,8 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final Clock clock;
 
-    public ReservationResponse createReservation(Long userId, ReservationRequest request){
+    @Transactional
+    public ReservationResponse createReservation(Long userId, ReservationRequest request) {
         //buscar sala
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new NotFoundException("Sala no encontrada"));
@@ -45,16 +47,23 @@ public class ReservationService {
 
         validateReservationTimes(start, end);
 
+        //bloqueo pesimista
+        reservationRepository.findOverlappingForUpdate(
+                room.getId(), start, end
+        );
+
         //verificacion de cruce de horarios
 
-        List<Reservation> overlapping =reservationRepository
-                .findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(room.getId(), end, start);
+        boolean exists = reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                room.getId(), end, start
+        );
 
-        if (!overlapping.isEmpty())
-            throw  new ReservationConflictException("La sala ya está reservada en ese horario");
+        if (exists) {
+            throw new ReservationConflictException("La sala ya está reservada en ese horario");
+        }
 
         // verificacion de reserva duplicada
-        if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start , end).isPresent())
+        if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start, end).isPresent())
             throw new ReservationConflictException("Ya tienes una reserva igual");
 
         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -91,7 +100,7 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
-    private void validateReservationTimes(Instant start, Instant end){
+    private void validateReservationTimes(Instant start, Instant end) {
         Instant now = Instant.now(clock);
 
         // evitar horas pasadas
@@ -110,8 +119,8 @@ public class ReservationService {
         LocalTime endLocal = end.atZone(zone).toLocalTime();
 
         // horario permitido
-        if (startLocal.isBefore(LocalTime.of(7,0)) ||
-                endLocal.isAfter(LocalTime.of(20,0))) {
+        if (startLocal.isBefore(LocalTime.of(7, 0)) ||
+                endLocal.isAfter(LocalTime.of(20, 0))) {
             throw new ReservationConflictException("Las reservas deben estar entre 07:00 y 20:00");
         }
 
@@ -133,13 +142,13 @@ public class ReservationService {
         return dto;
     }
 
-    public List<ReservationResponse> getAllReservations(){
-        return  reservationRepository.findAll().stream()
+    public List<ReservationResponse> getAllReservations() {
+        return reservationRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    public void deleteReservation(Long id){
+    public void deleteReservation(Long id) {
         if (!reservationRepository.existsById(id))
             throw new RuntimeException("Reserva no encontrada");
 
@@ -150,15 +159,15 @@ public class ReservationService {
     public List<CalendarEventResponse> getCalendar(
             Instant from,
             Instant to
-    ){
+    ) {
         return reservationRepository
                 .findByStartAtLessThanAndEndAtGreaterThan(to, from)
                 .stream()
                 .map(r -> new CalendarEventResponse(
-                         r.getRoom().getName(),
-                         r.getStartAt(),
-                         r.getEndAt(),
-                         r.getRoom().getId()
+                        r.getRoom().getName(),
+                        r.getStartAt(),
+                        r.getEndAt(),
+                        r.getRoom().getId()
                 ))
                 .collect(Collectors.toList());
     }
