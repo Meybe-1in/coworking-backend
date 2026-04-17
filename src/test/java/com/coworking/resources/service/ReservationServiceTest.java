@@ -83,9 +83,11 @@ class ReservationServiceTest {
         // Given
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(reservationRepository.findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+
+        when(reservationRepository.findOverlappingForUpdate(
                 anyLong(), any(), any())
         ).thenReturn(Collections.emptyList());
+
         when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
                 anyLong(), anyLong(), any(), any())
         ).thenReturn(Optional.empty());
@@ -124,9 +126,11 @@ class ReservationServiceTest {
     void createReservation_shouldCalculatePrice() {
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(reservationRepository.findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+
+        when(reservationRepository.findOverlappingForUpdate(
                 anyLong(), any(), any()))
                 .thenReturn(Collections.emptyList());
+
         when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
                 anyLong(), anyLong(), any(), any()))
                 .thenReturn(Optional.empty());
@@ -154,10 +158,13 @@ class ReservationServiceTest {
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
-        List<Reservation> overlapping = List.of(new Reservation());
-        when(reservationRepository.findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any())
-        ).thenReturn(overlapping);
+        when(reservationRepository.findOverlappingForUpdate(
+                anyLong(), any(), any()
+        )).thenReturn(Collections.emptyList());
+
+        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any()
+        )).thenReturn(true);
 
         // When + Then
         assertThrows(ReservationConflictException.class,
@@ -169,9 +176,11 @@ class ReservationServiceTest {
         // Given
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(reservationRepository.findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+
+        when(reservationRepository.findOverlappingForUpdate(
                 anyLong(), any(), any())
         ).thenReturn(Collections.emptyList());
+
         when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
                 anyLong(), anyLong(), any(), any())
         ).thenReturn(Optional.of(new Reservation()));
@@ -179,6 +188,33 @@ class ReservationServiceTest {
         // When + Then
         assertThrows(ReservationConflictException.class,
                 () -> reservationService.createReservation(user.getId(), request));
+    }
+
+    @Test
+    void createReservation_shouldCallPessimisticLock() {
+        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        when(reservationRepository.findOverlappingForUpdate(
+                anyLong(), any(), any()
+        )).thenReturn(Collections.emptyList());
+
+        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any()
+        )).thenReturn(false);
+
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
+                anyLong(), anyLong(), any(), any()
+        )).thenReturn(Optional.empty());
+
+        when(reservationRepository.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        reservationService.createReservation(user.getId(), request);
+
+        verify(reservationRepository).findOverlappingForUpdate(
+                eq(room.getId()), any(), any()
+        );
     }
     //Validacion de horario invalido
     @Test
