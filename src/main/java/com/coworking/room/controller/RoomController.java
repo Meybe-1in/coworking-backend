@@ -40,7 +40,7 @@ public class RoomController {
     }
 
     //Actualizar
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Actualizar sala existente(solo ADMIN)")
     public ResponseEntity<RoomDto> actualizarRoom(@PathVariable Long id, @RequestBody RoomDto dto){
