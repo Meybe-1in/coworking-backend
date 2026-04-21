@@ -46,4 +46,7 @@ public class Reservation {
     @Column(nullable = false)
     private ReservationStatus status = ReservationStatus.PENDING;
 
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
 }
