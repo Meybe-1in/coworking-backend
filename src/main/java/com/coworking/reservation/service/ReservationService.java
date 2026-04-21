@@ -1,6 +1,7 @@
 package com.coworking.reservation.service;
 
 
+import com.coworking.exception.ErrorCode;
 import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.dto.CalendarEventResponse;
 import com.coworking.reservation.dto.ReservationRequest;
@@ -59,12 +60,16 @@ public class ReservationService {
         );
 
         if (exists) {
-            throw new ReservationConflictException("La sala ya está reservada en ese horario");
+            throw new ReservationConflictException(
+                    ErrorCode.RESERVATION_OVERLAP.name(),
+                    "La sala ya está reservada en ese horario");
         }
 
         // verificacion de reserva duplicada
         if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start, end).isPresent())
-            throw new ReservationConflictException("Ya tienes una reserva igual");
+            throw new ReservationConflictException(
+                    ErrorCode.DUPLICATE_RESERVATION.name(),
+                    "Ya tienes una reserva igual");
 
         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
         //                     CALCULO DE PRECIO
@@ -73,7 +78,9 @@ public class ReservationService {
         long minutes = Duration.between(start, end).toMinutes();
 
         if (minutes <= 0) {
-            throw new ReservationConflictException("Duración inválida");
+            throw new ReservationConflictException(
+                    ErrorCode.INVALID_DURATION.name(),
+                    "Duración inválida");
         }
 
         // convertir minutos a horas con precisión
@@ -105,12 +112,16 @@ public class ReservationService {
 
         // evitar horas pasadas
         if (start.isBefore(now)) {
-            throw new ReservationConflictException("No puedes reservar horas pasadas");
+            throw new ReservationConflictException(
+                    ErrorCode.PAST_TIME_NOT_ALLOWED.name(),
+                    "No puedes reservar horas pasadas");
         }
 
         // inicio debe ser antes que fin
         if (!start.isBefore(end)) {
-            throw new ReservationConflictException("La hora de inicio debe ser anterior a la de fin");
+            throw new ReservationConflictException(
+                    ErrorCode.INVALID_TIME_RANGE.name(),
+                    "La hora de inicio debe ser anterior a la de fin");
         }
         // horario 07:00 - 20:00 EN HORA LOCAL
         ZoneId zone = ZoneId.of("America/El_Salvador");
@@ -121,12 +132,16 @@ public class ReservationService {
         // horario permitido
         if (startLocal.isBefore(LocalTime.of(7, 0)) ||
                 endLocal.isAfter(LocalTime.of(20, 0))) {
-            throw new ReservationConflictException("Las reservas deben estar entre 07:00 y 20:00");
+            throw new ReservationConflictException(
+                    ErrorCode.INVALID_TIME_RANGE.name(),
+                    "Las reservas deben estar entre 07:00 y 20:00");
         }
 
         // duración máxima
         if (Duration.between(start, end).toHours() > 8) {
-            throw new ReservationConflictException("La duración máxima es 8 horas");
+            throw new ReservationConflictException(
+                    ErrorCode.INVALID_DURATION.name(),
+                    "La duración máxima es 8 horas");
         }
     }
 
