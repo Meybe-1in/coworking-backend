@@ -1,4 +1,4 @@
-package com.coworking.resources.service;
+package com.coworking.resources.service.reservation;
 
 import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;

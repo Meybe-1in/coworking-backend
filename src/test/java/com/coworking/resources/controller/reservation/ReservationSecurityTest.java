@@ -1,4 +1,4 @@
-package com.coworking.resources.controller;
+package com.coworking.resources.controller.reservation;
 
 import com.coworking.security.AuthenticationEntryPointImpl;
 import com.coworking.reservation.controller.ReservationController;

@@ -1,4 +1,4 @@
-package com.coworking.resources.service;
+package com.coworking.resources.service.auth;
 
 import com.coworking.auth.service.PasswordResetService;
 import com.coworking.domain.notification.EmailSender;
