@@ -1,4 +1,4 @@
-package com.coworking.resources.service;
+package com.coworking.resources.service.auth;
 
 import com.coworking.auth.dto.ForgotPasswordRequest;
 import com.coworking.auth.dto.LoginRequest;

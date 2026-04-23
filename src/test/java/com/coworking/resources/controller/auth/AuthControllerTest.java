@@ -1,4 +1,4 @@
-package com.coworking.resources.controller;
+package com.coworking.resources.controller.auth;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -11,11 +11,8 @@ import com.coworking.auth.dto.ForgotPasswordRequest;
 import com.coworking.auth.repository.PasswordResetTokenRepository;
 import com.coworking.auth.repository.VerificationTokenRepository;
 import com.coworking.auth.service.AuthService;
-import com.coworking.email.service.EmailService;
 import com.coworking.auth.service.GoogleAuthService;
-import com.coworking.auth.service.PasswordResetService;
 import com.coworking.exception.BadRequestException;
-import com.coworking.user.model.User;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +30,6 @@ import com.coworking.user.repository.UserRepository;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-import java.util.Optional;
 
 
 @WebMvcTest(AuthController.class)

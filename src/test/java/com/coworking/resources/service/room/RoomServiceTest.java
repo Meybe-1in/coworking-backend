@@ -1,4 +1,4 @@
-package com.coworking.resources.service;
+package com.coworking.resources.service.room;
 
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.model.Room;

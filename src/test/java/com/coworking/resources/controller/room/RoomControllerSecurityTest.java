@@ -1,4 +1,4 @@
-package com.coworking.resources.controller;
+package com.coworking.resources.controller.room;
 
 import com.coworking.room.controller.RoomController;
 import com.coworking.security.JwtUtil;

@@ -1,4 +1,4 @@
-package com.coworking.resources.controller;
+package com.coworking.resources.controller.reservation;
 
 import com.coworking.reservation.controller.ReservationController;
 import com.coworking.reservation.dto.CalendarEventResponse;
