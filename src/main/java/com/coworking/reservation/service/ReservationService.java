@@ -187,4 +187,18 @@ public class ReservationService {
                 ))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public void markAsPaid(long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new NotFoundException("Reservacion no encontrada"));
+
+        if (reservation.getStatus() == ReservationStatus.PAID) {
+            return; //evitar procesar
+        }
+
+        reservation.setStatus(ReservationStatus.PAID);
+
+        reservationRepository.save(reservation);
+    }
 }
