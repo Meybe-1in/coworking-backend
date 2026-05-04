@@ -1,5 +1,6 @@
 package com.coworking.payment.service;
 
+import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.model.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -18,7 +19,7 @@ public class StripePaymentService implements PaymentService {
     public String createPaymentIntent(Long reservationId) {
 
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Reserva no encontrada"));
 
         //Validar estado
         if (reservation.getStatus() != ReservationStatus.PENDING){
