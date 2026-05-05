@@ -34,7 +34,7 @@ public class StripeWebhookController {
     public ResponseEntity<String> handleStripeWebhook(HttpServletRequest request){
         String payload;
         try {
-            payload = request.getReader().lines().collect(Collectors.joining());
+            payload = new String(request.getInputStream().readAllBytes());
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("Invalid payload");
         }
