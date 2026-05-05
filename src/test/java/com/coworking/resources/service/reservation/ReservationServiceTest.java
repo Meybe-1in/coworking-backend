@@ -1,5 +1,6 @@
 package com.coworking.resources.service.reservation;
 
+import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;
 import com.coworking.exception.ReservationConflictException;
@@ -239,4 +240,53 @@ class ReservationServiceTest {
 
         verify(reservationRepository).deleteById(1L);
     }
+
+
+    //stripe paid
+
+    @Test
+    void shouldMarkReservationAsPaid() {
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatus(ReservationStatus.PENDING);
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        reservationService.markAsPaid(1L);
+
+        assertEquals(ReservationStatus.PAID, reservation.getStatus());
+
+        verify(reservationRepository).save(reservation);
+    }
+
+    @Test
+    void shouldNotUpdateIfAlreadyPaid() {
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatus(ReservationStatus.PAID);
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        reservationService.markAsPaid(1L);
+
+        assertEquals(ReservationStatus.PAID, reservation.getStatus());
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowIfReservationNotFound() {
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> reservationService.markAsPaid(1L));
+    }
+
+
 }

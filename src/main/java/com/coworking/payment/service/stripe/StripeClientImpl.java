@@ -19,10 +19,6 @@ public class StripeClientImpl implements StripeClient {
 
         try {
 
-            if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RuntimeException("Monto inválido para pago");
-            }
-
             long amount = price.multiply(BigDecimal.valueOf(100)).longValue();
 
             PaymentIntentCreateParams params =
