@@ -1,7 +1,7 @@
 package com.coworking.payment.controller.stripe;
 
-
 import com.coworking.reservation.service.ReservationService;
+import com.stripe.exception.EventDataObjectDeserializationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.PaymentIntent;
@@ -10,12 +10,12 @@ import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -25,82 +25,87 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class StripeWebhookController {
+
+    private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
+
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
 
     private final ReservationService reservationService;
 
     @PostMapping("/webhook")
-    public ResponseEntity<String> handleStripeWebhook(HttpServletRequest request){
+    public ResponseEntity<String> handleStripeWebhook(HttpServletRequest request) {
         String payload;
         try {
             payload = new String(request.getInputStream().readAllBytes());
         } catch (IOException e) {
+            log.error("Error leyendo payload", e);
             return ResponseEntity.badRequest().body("Invalid payload");
         }
 
         String sigHeader = request.getHeader("Stripe-Signature");
 
         Event event;
-
         try {
+            log.info("Webhook secret usado: {}", webhookSecret);
             event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
-
         } catch (Exception e) {
+            log.error("Error validando firma de Stripe", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Fallo la verificacion");
         }
 
-        System.out.println("Webhook recibido: " + event.getType());
+        log.info("Webhook recibido: {}", event.getType());
 
-        //MANEJO DE EVENTOS
+        try {
+            switch (event.getType()) {
+                case "payment_intent.succeeded":
+                    handlePaymentIntentSucceeded(event);
+                    break;
 
-        switch (event.getType()){
-           /* case "checkout.session.completed":
-                handleCheckoutSessionCompleted(event);
-                break;
-            */
-            case "payment_intent.succeeded":
-                handlePaymentIntentSucceeded(event);
-                break;
+                /*
+                case "checkout.session.completed":
+                    handleCheckoutSessionCompleted(event);
+                    break;
+                */
 
-            default:
-                System.out.println("Unhandled event: " + event.getType());
+                default:
+                    log.warn("Evento no manejado: {}", event.getType());
+            }
+        } catch (Exception e) {
+            log.error("Error procesando evento de Stripe", e);
         }
 
         return ResponseEntity.ok("Recibido");
     }
 
-    private void handlePaymentIntentSucceeded(Event event) {
-        EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
-        Optional<StripeObject> object = dataObjectDeserializer.getObject();
+    private void handlePaymentIntentSucceeded(Event event) throws EventDataObjectDeserializationException {
 
-        if (object.isPresent()) {
-            PaymentIntent paymentIntent =
-                    (PaymentIntent) object.get();
-
-            String reservationId = paymentIntent.getMetadata().get("reservationId");
-
-            if (reservationId != null) {
-                reservationService.markAsPaid(Long.parseLong(reservationId));
-            }
-        }
-
-    }
-
-    private void handleCheckoutSessionCompleted(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
 
-        Optional<StripeObject> object = dataObjectDeserializer.getObject();
+        StripeObject stripeObject = dataObjectDeserializer.getObject().orElse(null);
 
-        if (object.isPresent()){
-            Session session = (Session) object.get();
-            String reservationId = session.getMetadata().get("reservationId");
+        if (stripeObject == null) {
+            stripeObject = dataObjectDeserializer.deserializeUnsafe();
+        }
 
-            if (reservationId != null){
-                reservationService.markAsPaid(Long.parseLong(reservationId));
-            }
+        PaymentIntent paymentIntent = (PaymentIntent) stripeObject;
+
+        if (paymentIntent.getMetadata() == null ||
+                !paymentIntent.getMetadata().containsKey("reservationId")) {
+
+            log.warn("PaymentIntent sin reservationId en metadata");
+            return;
+        }
+
+        String reservationId = paymentIntent.getMetadata().get("reservationId");
+
+        try {
+            Long id = Long.parseLong(reservationId);
+            reservationService.markAsPaid(id);
+            log.info("Reserva {} marcada como PAID", id);
+
+        } catch (NumberFormatException e) {
+            log.error("reservationId inválido: {}", reservationId, e);
         }
     }
-
-
 }
