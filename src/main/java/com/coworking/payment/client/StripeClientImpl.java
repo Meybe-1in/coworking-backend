@@ -1,4 +1,4 @@
-package com.coworking.payment.service.stripe;
+package com.coworking.payment.client;
 
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Component
 public class StripeClientImpl implements StripeClient {
 
-    @Value("${stripe.currency}")
+    @Value("${webhook.currency}")
     private String currency;
 
     @Override

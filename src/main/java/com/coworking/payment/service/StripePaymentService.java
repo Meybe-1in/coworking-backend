@@ -5,7 +5,7 @@ import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.model.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
-import com.coworking.payment.service.stripe.StripeClient;
+import com.coworking.payment.client.StripeClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

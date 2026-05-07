@@ -1,4 +1,4 @@
-package com.coworking.payment.service.stripe;
+package com.coworking.payment.client;
 
 import java.math.BigDecimal;
 

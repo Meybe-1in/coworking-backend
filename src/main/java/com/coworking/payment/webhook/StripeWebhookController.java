@@ -1,4 +1,4 @@
-package com.coworking.payment.controller.stripe;
+package com.coworking.payment.webhook;
 
 import com.coworking.reservation.service.ReservationService;
 import com.stripe.exception.EventDataObjectDeserializationException;
@@ -6,7 +6,6 @@ import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
-import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ public class StripeWebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
 
-    @Value("${stripe.webhook-secret}")
+    @Value("${webhook.webhook-secret}")
     private String webhookSecret;
 
     private final ReservationService reservationService;

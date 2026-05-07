@@ -3,7 +3,7 @@ package com.coworking.resources.service.payment;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.service.PaymentService;
 import com.coworking.payment.service.StripePaymentService;
-import com.coworking.payment.service.stripe.StripeClient;
+import com.coworking.payment.client.StripeClient;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.model.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -72,7 +72,7 @@ class StripePaymentServiceTest {
             paymentService.createPaymentIntent(1L, "test@mail.com");
         });
 
-        // stripe nunca debe llamarse
+        // webhook nunca debe llamarse
         Mockito.verifyNoInteractions(stripeClient);
     }
 
