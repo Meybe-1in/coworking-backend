@@ -5,7 +5,9 @@ import com.coworking.payment.service.PaymentService;
 import com.coworking.payment.service.StripePaymentService;
 import com.coworking.payment.service.stripe.StripeClient;
 import com.coworking.reservation.model.Reservation;
+import com.coworking.reservation.model.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
+import com.coworking.user.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,9 +37,14 @@ class StripePaymentServiceTest {
     @Test
     void shouldCreatePaymentIntent() {
 
+        User user = new User();
+        user.setEmail("test@mail.com");
+
         Reservation reservation = new Reservation();
         reservation.setId(1L);
         reservation.setPrice(BigDecimal.valueOf(10));
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.PENDING);
 
         Mockito.when(reservationRepository.findById(1L))
                 .thenReturn(Optional.of(reservation));
@@ -45,11 +52,10 @@ class StripePaymentServiceTest {
         Mockito.when(stripeClient.createPaymentIntent(Mockito.any(), Mockito.any()))
                 .thenReturn("fake_client_secret");
 
-        String clientSecret = paymentService.createPaymentIntent(1L);
+        String clientSecret = paymentService.createPaymentIntent(1L, "test@mail.com");
 
         assertNotNull(clientSecret);
 
-        //verification
         Mockito.verify(stripeClient, Mockito.times(1))
                 .createPaymentIntent(BigDecimal.valueOf(10), 1L);
     }
@@ -63,7 +69,7 @@ class StripePaymentServiceTest {
 
         // Act & Assert
         assertThrows(NotFoundException.class, () -> {
-            paymentService.createPaymentIntent(1L);
+            paymentService.createPaymentIntent(1L, "test@mail.com");
         });
 
         // stripe nunca debe llamarse
@@ -73,10 +79,14 @@ class StripePaymentServiceTest {
     @Test
     void shouldThrowExceptionWhenStripeFails() {
 
-        // Arrange
+        User user = new User();
+        user.setEmail("test@mail.com");
+
         Reservation reservation = new Reservation();
         reservation.setId(1L);
         reservation.setPrice(BigDecimal.valueOf(10));
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.PENDING);
 
         Mockito.when(reservationRepository.findById(1L))
                 .thenReturn(Optional.of(reservation));
@@ -84,12 +94,10 @@ class StripePaymentServiceTest {
         Mockito.when(stripeClient.createPaymentIntent(Mockito.any(), Mockito.any()))
                 .thenThrow(new RuntimeException("Stripe error"));
 
-        // Act & Assert
         assertThrows(RuntimeException.class, () -> {
-            paymentService.createPaymentIntent(1L);
+            paymentService.createPaymentIntent(1L, "test@mail.com");
         });
 
-        // verifica si intentó llamar a Stripe
         Mockito.verify(stripeClient)
                 .createPaymentIntent(BigDecimal.valueOf(10), 1L);
     }
