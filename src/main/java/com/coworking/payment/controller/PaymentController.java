@@ -24,7 +24,7 @@ public class PaymentController {
         String clientSecret= paymentService.createPaymentIntent(reservationId, email);
 
         return ResponseEntity.ok(Map.of(
-                "ClientSecret", clientSecret
+                "clientSecret", clientSecret
         ));
     }
 }
