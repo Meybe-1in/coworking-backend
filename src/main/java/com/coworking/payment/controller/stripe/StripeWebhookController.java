@@ -18,8 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -61,12 +59,6 @@ public class StripeWebhookController {
                 case "payment_intent.succeeded":
                     handlePaymentIntentSucceeded(event);
                     break;
-
-                /*
-                case "checkout.session.completed":
-                    handleCheckoutSessionCompleted(event);
-                    break;
-                */
 
                 default:
                     log.warn("Evento no manejado: {}", event.getType());
