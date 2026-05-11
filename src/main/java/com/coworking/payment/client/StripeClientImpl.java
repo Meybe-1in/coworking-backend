@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 @Component
 public class StripeClientImpl implements StripeClient {
 
-    @Value("${webhook.currency}")
+    @Value("${stripe.currency}")
     private String currency;
 
     @Override
-    public String createPaymentIntent(BigDecimal price, Long reservationId) {
+    public PaymentIntent createPaymentIntent(BigDecimal price, Long reservationId) {
 
         try {
 
@@ -28,9 +28,7 @@ public class StripeClientImpl implements StripeClient {
                             .putMetadata("reservationId", reservationId.toString())
                             .build();
 
-            PaymentIntent intent = PaymentIntent.create(params);
-
-            return intent.getClientSecret();
+            return PaymentIntent.create(params);
 
         } catch (StripeException e) {
             throw new RuntimeException("Error creando PaymentIntent", e);
