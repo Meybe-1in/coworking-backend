@@ -2,12 +2,21 @@ package com.coworking.payment.service;
 
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
+import com.coworking.payment.client.StripeClient;
+import com.coworking.payment.enums.PaymentStatus;
+import com.coworking.payment.model.Payment;
+import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.model.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
-import com.coworking.payment.client.StripeClient;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +24,7 @@ public class StripePaymentService implements PaymentService {
 
     private final ReservationRepository reservationRepository;
     private final StripeClient stripeClient;
+    private final PaymentRepository paymentRepository;
 
     @Override
     public String createPaymentIntent(Long reservationId, String userEmail) {
@@ -22,19 +32,79 @@ public class StripePaymentService implements PaymentService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new NotFoundException("Reserva no encontrada"));
 
-        //validar cliente
+        // validar cliente
         if (!reservation.getUser().getEmail().equals(userEmail)) {
             throw new BadRequestException("No autorizado para pagar esta reserva");
         }
 
-        //Validar estado
-        if (reservation.getStatus() != ReservationStatus.PENDING){
+        // validar estado
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new BadRequestException("La reserva ya fue procesada");
         }
 
-        return stripeClient.createPaymentIntent(
-                reservation.getPrice(),
-                reservation.getId()
+        try {
+
+            // evitar múltiples PaymentIntent
+            if (reservation.getStripePaymentIntentId() != null) {
+
+                PaymentIntent existing =
+                        PaymentIntent.retrieve(
+                                reservation.getStripePaymentIntentId()
+                        );
+
+                return existing.getClientSecret();
+            }
+
+            PaymentIntent paymentIntent = stripeClient.createPaymentIntent(
+                    reservation.getPrice(),
+                    reservation.getId()
+            );
+
+            reservation.setStripePaymentIntentId(paymentIntent.getId());
+
+            reservationRepository.save(reservation);
+
+            return paymentIntent.getClientSecret();
+
+        } catch (StripeException e) {
+            throw new RuntimeException("Error procesando pago", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void registerSuccessfulPayment(PaymentIntent paymentIntent) {
+        Long reservationId = Long.parseLong(
+                paymentIntent.getMetadata().get("reservationId")
         );
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new NotFoundException("Reserva no encontrada"));
+
+        // evitar duplicados webhook
+        if (paymentRepository.findByStripePaymentIntentId(paymentIntent.getId()).isPresent()) {
+            return;
+        }
+
+        Payment payment = new Payment();
+
+        payment.setReservation(reservation);
+
+        payment.setStripePaymentIntentId(paymentIntent.getId());
+
+        payment.setAmount(
+                BigDecimal.valueOf(paymentIntent.getAmount())
+                        .divide(BigDecimal.valueOf(100))
+        );
+
+        payment.setCurrency(paymentIntent.getCurrency());
+
+        payment.setPaidAt(Instant.now());
+
+        payment.setStatus(PaymentStatus.SUCCEEDED);
+        paymentRepository.save(payment);
+        reservation.setStatus(ReservationStatus.PAID);
+        reservationRepository.save(reservation);
+
     }
 }
