@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class StripeConfig {
 
-    @Value("${webhook.secret-key}")
+    @Value("${stripe.secret-key}")
     private String secretKey;
 
     @PostConstruct
