@@ -49,4 +49,7 @@ public class Reservation {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(unique = true)
+    private String stripePaymentIntentId;
+
 }
