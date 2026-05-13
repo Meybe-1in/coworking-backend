@@ -15,6 +15,8 @@ import java.util.Optional;
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
+    List<Reservation> findByUserEmailOrderByCreatedAtDesc(String email);
+
     //verificar si se cruzan horarios
     List<Reservation> findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
             Long roomId,

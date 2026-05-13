@@ -158,12 +158,23 @@ public class ReservationService {
         return dto;
     }
 
+    //Obtener todas las reservaciones
     public List<ReservationResponse> getAllReservations() {
         return reservationRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    //Obtener mi reserva
+    public List<ReservationResponse> getMyReservations(String email){
+        return reservationRepository
+                .findByUserEmailOrderByCreatedAtDesc(email)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    //Eliminar reservacion por id
     public void deleteReservation(Long id) {
         if (!reservationRepository.existsById(id))
             throw new RuntimeException("Reserva no encontrada");
