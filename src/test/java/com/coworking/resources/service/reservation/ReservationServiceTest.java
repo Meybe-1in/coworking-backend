@@ -242,7 +242,7 @@ class ReservationServiceTest {
     }
 
 
-    //stripe paid
+    //webhook paid
 
     @Test
     void shouldMarkReservationAsPaid() {

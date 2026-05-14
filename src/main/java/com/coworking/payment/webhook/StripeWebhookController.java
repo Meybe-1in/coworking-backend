@@ -1,12 +1,12 @@
-package com.coworking.payment.controller.stripe;
+package com.coworking.payment.webhook;
 
+import com.coworking.payment.service.PaymentService;
 import com.coworking.reservation.service.ReservationService;
 import com.stripe.exception.EventDataObjectDeserializationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
-import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class StripeWebhookController {
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
 
-    private final ReservationService reservationService;
+    private final PaymentService paymentService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeWebhook(HttpServletRequest request) {
@@ -45,14 +45,16 @@ public class StripeWebhookController {
 
         Event event;
         try {
-            log.info("Webhook secret usado: {}", webhookSecret);
-            event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
+            event = Webhook.constructEvent(
+                    payload,
+                    sigHeader,
+                    webhookSecret
+            );
         } catch (Exception e) {
-            log.error("Error validando firma de Stripe", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Fallo la verificacion");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Fallo la verificacion");
         }
-
-        log.info("Webhook recibido: {}", event.getType());
 
         try {
             switch (event.getType()) {
@@ -91,13 +93,11 @@ public class StripeWebhookController {
 
         String reservationId = paymentIntent.getMetadata().get("reservationId");
 
-        try {
-            Long id = Long.parseLong(reservationId);
-            reservationService.markAsPaid(id);
-            log.info("Reserva {} marcada como PAID", id);
+        paymentService.registerSuccessfulPayment(paymentIntent);
 
-        } catch (NumberFormatException e) {
-            log.error("reservationId inválido: {}", reservationId, e);
-        }
+        log.info(
+                "Pago registrado correctamente para reservationId {}",
+                paymentIntent.getMetadata().get("reservationId")
+        );
     }
 }

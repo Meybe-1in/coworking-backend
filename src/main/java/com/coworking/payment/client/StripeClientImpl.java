@@ -1,4 +1,4 @@
-package com.coworking.payment.service.stripe;
+package com.coworking.payment.client;
 
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -15,7 +15,7 @@ public class StripeClientImpl implements StripeClient {
     private String currency;
 
     @Override
-    public String createPaymentIntent(BigDecimal price, Long reservationId) {
+    public PaymentIntent createPaymentIntent(BigDecimal price, Long reservationId) {
 
         try {
 
@@ -28,9 +28,7 @@ public class StripeClientImpl implements StripeClient {
                             .putMetadata("reservationId", reservationId.toString())
                             .build();
 
-            PaymentIntent intent = PaymentIntent.create(params);
-
-            return intent.getClientSecret();
+            return PaymentIntent.create(params);
 
         } catch (StripeException e) {
             throw new RuntimeException("Error creando PaymentIntent", e);
