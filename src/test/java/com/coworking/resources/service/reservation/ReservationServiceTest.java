@@ -288,5 +288,56 @@ class ReservationServiceTest {
                 () -> reservationService.markAsPaid(1L));
     }
 
+    //mis reservaciones
+
+    @Test
+    void shouldReturnReservationsByEmail() {
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setUser(user);
+        reservation.setRoom(room);
+        reservation.setStartAt(request.getStartAt());
+        reservation.setEndAt(request.getEndAt());
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setPrice(BigDecimal.valueOf(20));
+
+        when(reservationRepository
+                .findByUserEmailOrderByCreatedAtDesc("p1@email.com"))
+                .thenReturn(List.of(reservation));
+
+        List<ReservationResponse> result =
+                reservationService.getMyReservations("p1@email.com");
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        ReservationResponse response = result.get(0);
+
+        assertEquals(1L, response.getId());
+        assertEquals("Sala A", response.getRoomName());
+        assertEquals("p1@email.com", response.getUsername());
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
+
+        verify(reservationRepository)
+                .findByUserEmailOrderByCreatedAtDesc("p1@email.com");
+    }
+
+    //edge case
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoReservations() {
+
+        when(reservationRepository
+                .findByUserEmailOrderByCreatedAtDesc("p1@email.com"))
+                .thenReturn(Collections.emptyList());
+
+        List<ReservationResponse> result =
+                reservationService.getMyReservations("p1@email.com");
+
+        assertTrue(result.isEmpty());
+
+        verify(reservationRepository)
+                .findByUserEmailOrderByCreatedAtDesc("p1@email.com");
+    }
 
 }
