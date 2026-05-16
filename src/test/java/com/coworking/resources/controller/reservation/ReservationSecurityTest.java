@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,6 +117,32 @@ class ReservationSecurityTest {
         doNothing().when(reservationService).deleteReservation(anyLong());
 
         mockMvc.perform(delete("/api/reservations/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/reservations/{id}/cancel - unauthenticated should return 401")
+    void cancelReservation_unauthenticated_shouldReturn401() throws Exception {
+
+        mockMvc.perform(
+                        patch("/api/reservations/1/cancel")
+                                .with(csrf())
+                )
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    @DisplayName("PATCH /api/reservations/{id}/cancel - authenticated user should pass security")
+    void cancelReservation_authenticated_shouldPassSecurity() throws Exception {
+
+        doNothing().when(reservationService)
+                .cancelReservation(anyLong(), anyString());
+
+        mockMvc.perform(
+                        patch("/api/reservations/1/cancel")
+                                .with(csrf())
+                )
                 .andExpect(status().isOk());
     }
 }
