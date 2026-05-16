@@ -5,7 +5,7 @@ import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;
 import com.coworking.exception.ReservationConflictException;
 import com.coworking.reservation.model.Reservation;
-import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.room.model.Room;
 import com.coworking.user.model.User;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -339,5 +339,133 @@ class ReservationServiceTest {
         verify(reservationRepository)
                 .findByUserEmailOrderByCreatedAtDesc("p1@email.com");
     }
+
+    //cancelar reservacion
+    @Test
+    void shouldCancelReservation() {
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setStartAt(Instant.parse("2025-01-02T15:00:00Z"));
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        reservationService.cancelReservation(1L, user.getEmail());
+
+        assertEquals(
+                ReservationStatus.CANCELLED,
+                reservation.getStatus()
+        );
+
+        verify(reservationRepository).save(reservation);
+    }
+
+    //cancelar reservacion de alguien mas
+    @Test
+    void shouldThrowWhenCancellingAnotherUsersReservation() {
+
+        Reservation reservation = new Reservation();
+
+        User anotherUser = new User();
+        anotherUser.setEmail("other@email.com");
+
+        reservation.setUser(anotherUser);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setStartAt(Instant.parse("2025-01-02T15:00:00Z"));
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.cancelReservation(
+                        1L,
+                        "p1@email.com"
+                )
+        );
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    //impedir cancelar iniciada
+    @Test
+    void shouldThrowWhenReservationAlreadyStarted() {
+
+        Reservation reservation = new Reservation();
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.PENDING);
+
+        reservation.setStartAt(
+                Instant.parse("2024-12-31T10:00:00Z")
+        );
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.cancelReservation(
+                        1L,
+                        user.getEmail()
+                )
+        );
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    //impedir cancelar ya cancelada
+    @Test
+    void shouldThrowWhenReservationAlreadyCancelled() {
+
+        Reservation reservation = new Reservation();
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setStartAt(
+                Instant.parse("2025-01-02T15:00:00Z")
+        );
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.cancelReservation(
+                        1L,
+                        user.getEmail()
+                )
+        );
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    //impedir cancelar pagadas
+    @Test
+    void shouldThrowWhenReservationIsPaid() {
+
+        Reservation reservation = new Reservation();
+        reservation.setUser(user);
+        reservation.setStatus(ReservationStatus.PAID);
+        reservation.setStartAt(
+                Instant.parse("2025-01-02T15:00:00Z")
+        );
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.cancelReservation(
+                        1L,
+                        user.getEmail()
+                )
+        );
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+
 
 }
