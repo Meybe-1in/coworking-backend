@@ -36,12 +36,12 @@ public class ReservationController {
     @Operation(summary = "Crear una reserva (USER o ADMIN)")
     public ReservationResponse create(@Valid @RequestBody ReservationRequest request, Authentication authentication) {
         // auth.getName() nos da el username del usuario autenticado
-      String username = authentication.getName();
-      Long userId = userRepository.findByEmail(username)
-              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username))
-              .getId();
+        String username = authentication.getName();
+        Long userId = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username))
+                .getId();
 
-    return reservationService.createReservation(userId, request);
+        return reservationService.createReservation(userId, request);
     }
 
     @GetMapping
@@ -51,12 +51,23 @@ public class ReservationController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<ReservationResponse>> getMyReservations( Authentication authentication){
+    @Operation(summary = "Listar solo mis reservas")
+    public ResponseEntity<List<ReservationResponse>> getMyReservations(Authentication authentication) {
         return ResponseEntity.ok(
                 reservationService.getMyReservations(
                         authentication.getName()
                 )
         );
+    }
+
+    @PatchMapping("/{id}/cancel")
+    @Operation(summary = "Cancelar reservacion propia")
+    public ResponseEntity<Void> cancelReservation(@PathVariable Long id, Authentication authentication) {
+        reservationService.cancelReservation(
+                id,
+                authentication.getName()
+        );
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
@@ -65,7 +76,7 @@ public class ReservationController {
         reservationService.deleteReservation(id);
     }
 
-    ///endpoint calendario de reservas(read only)
+    /// endpoint calendario de reservas(read only)
     @GetMapping("/calendar")
     @Operation(summary = "Calendario reservas por sala")
     public List<CalendarEventResponse> getCalendar(
@@ -75,7 +86,7 @@ public class ReservationController {
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             Instant to
-    ){
+    ) {
         return reservationService.getCalendar(from, to);
     }
 }
