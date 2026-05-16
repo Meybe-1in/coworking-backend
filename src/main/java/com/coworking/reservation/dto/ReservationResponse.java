@@ -1,6 +1,6 @@
 package com.coworking.reservation.dto;
 
-import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.reservation.enums.ReservationStatus;
 import lombok.Getter;
 import lombok.Setter;
 

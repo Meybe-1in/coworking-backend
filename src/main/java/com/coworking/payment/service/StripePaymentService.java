@@ -7,7 +7,7 @@ import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.model.Reservation;
-import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
