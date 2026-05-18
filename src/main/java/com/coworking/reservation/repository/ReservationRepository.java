@@ -59,5 +59,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     );
 
 
-    List<Reservation> findByStatusAndCreatedBefore(ReservationStatus status, Instant createsAt);
+    List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, Instant createdAt);
 }

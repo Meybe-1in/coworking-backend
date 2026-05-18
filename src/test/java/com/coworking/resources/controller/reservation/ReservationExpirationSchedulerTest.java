@@ -40,7 +40,7 @@ public class ReservationExpirationSchedulerTest {
         );
 
         when(reservationRepository
-                .findByStatusAndCreatedBefore(
+                .findByStatusAndCreatedAtBefore(
                         eq(ReservationStatus.PENDING),
                         any()
                 ))

@@ -27,7 +27,7 @@ public class ReservationExpirationScheduler {
 
         List<Reservation> expiredReservations =
                 reservationRepository
-                        .findByStatusAndCreatedBefore(
+                        .findByStatusAndCreatedAtBefore(
                                 ReservationStatus.PENDING,
                                 limit
                         );
