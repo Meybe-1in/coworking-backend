@@ -1,5 +1,6 @@
 package com.coworking.reservation.model;
 
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.room.model.Room;
 import com.coworking.user.model.User;
 import jakarta.persistence.*;

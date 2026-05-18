@@ -7,7 +7,7 @@ import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.payment.service.PaymentService;
 import com.coworking.payment.service.StripePaymentService;
 import com.coworking.reservation.model.Reservation;
-import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.user.model.User;
 import com.stripe.model.PaymentIntent;

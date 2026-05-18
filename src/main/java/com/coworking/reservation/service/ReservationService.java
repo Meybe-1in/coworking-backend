@@ -7,8 +7,9 @@ import com.coworking.reservation.dto.CalendarEventResponse;
 import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;
 import com.coworking.exception.ReservationConflictException;
+import com.coworking.reservation.enums.ErrorCodeReservation;
 import com.coworking.reservation.model.Reservation;
-import com.coworking.reservation.model.ReservationStatus;
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.room.model.Room;
 import com.coworking.user.model.User;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -210,6 +211,51 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.PAID);
 
+        reservationRepository.save(reservation);
+    }
+
+    @Transactional
+    public void cancelReservation(Long reservationId, String email){
+
+        Reservation reservation =reservationRepository.findById(reservationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Reservación no encontrada")
+                        );
+
+        //validar usuario
+
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.UNAUTHORIZED_ACTION.name(),
+                    "No puedes cancelar esta reservación"
+            );
+        }
+
+        //evitar cancelar ya cancelada
+        if (reservation.getStatus() == ReservationStatus.CANCELLED){
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.RESERVATION_ALREADY_CANCELLED.name(),
+                    "La reservación ya fue cancelada"
+            );
+        }
+
+        //Evitar cancelar reservaciones iniciadas
+        if (reservation.getStartAt().isBefore(Instant.now(clock))){
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.RESERVATION_ALREADY_STARTED.name(),
+                    "No puedes cancelar una reservación iniciada"
+            );
+        }
+
+        //evitar cancelar reservas pagadas
+        if (reservation.getStatus() == ReservationStatus.PAID){
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.UNAUTHORIZED_ACTION.name(),
+                    "No puedes cancelar una reservación pagada"
+            );
+        }
+
+        reservation.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
     }
 }
