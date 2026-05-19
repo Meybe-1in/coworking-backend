@@ -15,6 +15,7 @@ public class ReservationResponse {
     private Instant startAt;
     private Instant endAt;
     private BigDecimal price;
+    private Instant createdAt;
     private ReservationStatus status;
 
 }
