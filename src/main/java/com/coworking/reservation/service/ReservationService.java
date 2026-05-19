@@ -155,6 +155,7 @@ public class ReservationService {
         dto.setStartAt(reservation.getStartAt());
         dto.setEndAt(reservation.getEndAt());
         dto.setStatus(reservation.getStatus());
+        dto.setCreatedAt(reservation.getCreatedAt());
         dto.setPrice(reservation.getPrice());
         return dto;
     }
@@ -167,7 +168,7 @@ public class ReservationService {
     }
 
     //Obtener mi reserva
-    public List<ReservationResponse> getMyReservations(String email){
+    public List<ReservationResponse> getMyReservations(String email) {
         return reservationRepository
                 .findByUserEmailOrderByCreatedAtDesc(email)
                 .stream()
@@ -239,12 +240,12 @@ public class ReservationService {
     }
 
     @Transactional
-    public void cancelReservation(Long reservationId, String email){
+    public void cancelReservation(Long reservationId, String email) {
 
-        Reservation reservation =reservationRepository.findById(reservationId)
+        Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() ->
                         new NotFoundException("Reservación no encontrada")
-                        );
+                );
 
         //validar usuario
 
@@ -256,7 +257,7 @@ public class ReservationService {
         }
 
         //evitar cancelar ya cancelada
-        if (reservation.getStatus() == ReservationStatus.CANCELLED){
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw new ReservationConflictException(
                     ErrorCodeReservation.RESERVATION_ALREADY_CANCELLED.name(),
                     "La reservación ya fue cancelada"
@@ -264,7 +265,7 @@ public class ReservationService {
         }
 
         //Evitar cancelar reservaciones iniciadas
-        if (reservation.getStartAt().isBefore(Instant.now(clock))){
+        if (reservation.getStartAt().isBefore(Instant.now(clock))) {
             throw new ReservationConflictException(
                     ErrorCodeReservation.RESERVATION_ALREADY_STARTED.name(),
                     "No puedes cancelar una reservación iniciada"
@@ -272,7 +273,7 @@ public class ReservationService {
         }
 
         //evitar cancelar reservas pagadas
-        if (reservation.getStatus() == ReservationStatus.PAID){
+        if (reservation.getStatus() == ReservationStatus.PAID) {
             throw new ReservationConflictException(
                     ErrorCodeReservation.UNAUTHORIZED_ACTION.name(),
                     "No puedes cancelar una reservación pagada"
