@@ -209,6 +209,30 @@ public class ReservationService {
             return; //evitar procesar
         }
 
+        //evitar pagar reservas canceladas o expiradas
+        if (reservation.getStatus() == ReservationStatus.CANCELLED ||
+                reservation.getStatus() == ReservationStatus.EXPIRED) {
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.RESERVATION_EXPIRED.name(),
+                    "La reservación ya no está disponible"
+            );
+        }
+
+        //validar expiracion(15 min)
+        Instant expirationTime = reservation.getCreatedAt()
+                        .plus(Duration.ofMinutes(15));
+
+        if (Instant.now(clock).isAfter(expirationTime)){
+            reservation.setStatus(ReservationStatus.EXPIRED);
+
+            reservationRepository.save(reservation);
+
+            throw new ReservationConflictException(
+                    ErrorCodeReservation.RESERVATION_EXPIRED.name(),
+                    "La reservación expiró"
+            );
+        }
+
         reservation.setStatus(ReservationStatus.PAID);
 
         reservationRepository.save(reservation);
