@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -47,6 +48,7 @@ public class Reservation {
     @Column(nullable = false)
     private ReservationStatus status = ReservationStatus.PENDING;
 
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
