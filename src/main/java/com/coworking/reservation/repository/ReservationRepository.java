@@ -1,5 +1,6 @@
 package com.coworking.reservation.repository;
 
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,4 +59,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     );
 
 
+    List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, Instant createdAt);
 }
