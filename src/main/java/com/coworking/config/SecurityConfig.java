@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
                     corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:5173"));
-                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("*"));
                     corsConfiguration.setAllowCredentials(true);
                     return corsConfiguration;
@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/reservations/**")
                         .hasAnyRole("USER","ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/reservations/**")
+                        .hasAnyRole("USER","ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/reservations/**")
                         .hasAnyRole("USER","ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/reservations/**")
                         .hasRole("ADMIN")
