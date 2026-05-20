@@ -103,7 +103,7 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.PENDING);
         reservation.setPrice(totalPrice);
         reservation.setNotes(request.getNotes());
-        reservation.setCreatedAt(Instant.now(clock));
+
 
         Reservation saved = reservationRepository.save(reservation);
         return mapToResponse(saved);
