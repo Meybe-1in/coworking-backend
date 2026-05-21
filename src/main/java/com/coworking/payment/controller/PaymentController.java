@@ -1,14 +1,13 @@
 package com.coworking.payment.controller;
 
+import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,4 +26,14 @@ public class PaymentController {
                 "clientSecret", clientSecret
         ));
     }
+
+    @GetMapping("/my-history")
+    public ResponseEntity<List<PaymentResponse>> getMyPayments( Authentication authentication){
+        return ResponseEntity.ok(
+                paymentService.getMyPayments(
+                        authentication.getName()
+                )
+        );
+    }
+
 }
