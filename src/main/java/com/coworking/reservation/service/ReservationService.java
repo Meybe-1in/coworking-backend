@@ -190,7 +190,11 @@ public class ReservationService {
             Instant to
     ) {
         return reservationRepository
-                .findByStartAtLessThanAndEndAtGreaterThan(to, from)
+                .findByStatusAndStartAtLessThanAndEndAtGreaterThan(
+                        ReservationStatus.PAID,
+                        to,
+                        from
+                )
                 .stream()
                 .map(r -> new CalendarEventResponse(
                         r.getRoom().getName(),
