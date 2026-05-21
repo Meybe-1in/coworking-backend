@@ -3,6 +3,7 @@ package com.coworking.payment.service;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.client.StripeClient;
+import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,23 @@ public class StripePaymentService implements PaymentService {
     private final ReservationRepository reservationRepository;
     private final StripeClient stripeClient;
     private final PaymentRepository paymentRepository;
+
+    private PaymentResponse mapToResponse(Payment payment){
+        return PaymentResponse.builder()
+                .id(payment.getId())
+                .reservationId(payment.getReservation().getId())
+                .roomName(
+                        payment.getReservation().getRoom() != null
+                                ? payment.getReservation().getRoom().getName()
+                                :null
+                        )
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .status(payment.getStatus())
+                .paymentMethod("stripe")
+                .paidAt(payment.getPaidAt())
+                .build();
+    }
 
     @Override
     public String createPaymentIntent(Long reservationId, String userEmail) {
@@ -106,5 +125,14 @@ public class StripePaymentService implements PaymentService {
         reservation.setStatus(ReservationStatus.PAID);
         reservationRepository.save(reservation);
 
+    }
+
+    @Override
+    public List<PaymentResponse> getMyPayments(String email) {
+        return paymentRepository
+                .findByReservationUserEmailOrderByPaidAtDesc(email)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 }
