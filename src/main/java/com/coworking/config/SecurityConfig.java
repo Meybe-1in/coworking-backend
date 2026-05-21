@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .hasAnyRole("USER","ADMIN")
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/payments/webhook").permitAll()
                         .requestMatchers("/api/payments/**")
                         .hasAnyRole("USER","ADMIN")
                         .anyRequest().authenticated()
