@@ -2,6 +2,7 @@ package com.coworking.resources.service.payment;
 
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.client.StripeClient;
+import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.payment.service.PaymentService;
@@ -9,6 +10,7 @@ import com.coworking.payment.service.StripePaymentService;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.repository.ReservationRepository;
+import com.coworking.room.model.Room;
 import com.coworking.user.model.User;
 import com.stripe.model.PaymentIntent;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,7 @@ import org.mockito.Mockito;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -158,5 +161,58 @@ class StripePaymentServiceTest {
                 .save(reservation);
 
         assertEquals(ReservationStatus.PAID, reservation.getStatus());
+    }
+
+    @Test
+    void shouldReturnUserPayments() {
+
+        User user = new User();
+        user.setEmail("test@mail.com");
+        Room room = new Room();
+        room.setName("Sala Privada");
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setUser(user);
+        reservation.setRoom(room);
+
+        Payment payment = new Payment();
+        payment.setId(1L);
+        payment.setReservation(reservation);
+
+        Mockito.when(
+                paymentRepository.findByReservationUserEmailOrderByPaidAtDesc(
+                        "test@mail.com"
+                )
+        ).thenReturn(List.of(payment));
+
+        List<PaymentResponse> response =
+                paymentService.getMyPayments("test@mail.com");
+
+        assertNotNull(response);
+
+        assertEquals(1, response.size());
+        assertEquals("Sala Privada", response.get(0).getRoomName());
+
+
+        Mockito.verify(paymentRepository)
+                .findByReservationUserEmailOrderByPaidAtDesc(
+                        "test@mail.com"
+                );
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoPayments() {
+
+        Mockito.when(
+                paymentRepository.findByReservationUserEmailOrderByPaidAtDesc(
+                        "test@mail.com"
+                )
+        ).thenReturn(List.of());
+
+        List<PaymentResponse> response =
+                paymentService.getMyPayments("test@mail.com");
+
+        assertTrue(response.isEmpty());
     }
 }
