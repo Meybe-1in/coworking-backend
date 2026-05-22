@@ -37,6 +37,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             Instant end,
             Instant start);
 
+    List<Reservation> findByStatusAndStartAtLessThanAndEndAtGreaterThan(
+            ReservationStatus status,
+            Instant end,
+            Instant start
+    );
+
     //overlapping
     boolean existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
             Long roomId,
