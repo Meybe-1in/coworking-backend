@@ -18,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
+                    var corsConfiguration = new CorsConfiguration();
                     corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:5173"));
                     corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                     corsConfiguration.setAllowedHeaders(List.of("*"));
@@ -54,21 +55,44 @@ public class SecurityConfig {
 
                         ).permitAll()
                         .requestMatchers("/auth/google").permitAll()
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                        //                         ADMIN
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                        .requestMatchers("/admin/**")
+                        .hasRole("ADMIN")
+
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                        //                       RESERVATIONS
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
                         .requestMatchers(HttpMethod.GET, "/api/reservations/**")
                         .hasAnyRole("USER","ADMIN")
+
                         .requestMatchers(HttpMethod.POST, "/api/reservations/**")
                         .hasAnyRole("USER","ADMIN")
+
                         .requestMatchers(HttpMethod.PATCH, "/api/reservations/**")
                         .hasAnyRole("USER","ADMIN")
+
                         .requestMatchers(HttpMethod.DELETE, "/api/reservations/**")
                         .hasRole("ADMIN")
+
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                        //                         ROOMS
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**")
                         .hasAnyRole("USER","ADMIN")
-                        .requestMatchers("/api/hello").permitAll()
+
                         .requestMatchers("/uploads/**").permitAll()
+
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                        //                         PAYMENTS
+                        // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
                         .requestMatchers("/api/payments/webhook").permitAll()
+
                         .requestMatchers("/api/payments/**")
                         .hasAnyRole("USER","ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
