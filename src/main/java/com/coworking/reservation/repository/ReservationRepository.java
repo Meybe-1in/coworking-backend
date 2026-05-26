@@ -66,4 +66,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 
     List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, Instant createdAt);
+
+    //admin metricts
+
+    long countByStatus( ReservationStatus status);
 }
