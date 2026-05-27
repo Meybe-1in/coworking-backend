@@ -61,6 +61,10 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/admin/reservations/**")
+                        .hasRole("ADMIN")
+
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
                         //                       RESERVATIONS
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
