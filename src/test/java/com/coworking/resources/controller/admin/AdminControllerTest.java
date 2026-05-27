@@ -24,9 +24,10 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AdminController.class)
@@ -126,5 +127,22 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].roomName")
                         .value("Sala Premium"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldCancelReservation() throws Exception {
+
+        doNothing().when(adminService)
+                .cancelReservation(1L);
+
+        mockMvc.perform(
+                        patch("/admin/reservations/1/cancel")
+                                .with(csrf())
+                )
+                .andExpect(status().isOk());
+
+        verify(adminService)
+                .cancelReservation(1L);
     }
 }

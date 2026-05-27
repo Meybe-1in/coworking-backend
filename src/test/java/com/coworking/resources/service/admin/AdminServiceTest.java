@@ -4,6 +4,7 @@ import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
+import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,8 +13,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,5 +59,26 @@ class AdminServiceTest {
         assertEquals(10L, response.totalReservations());
         assertEquals(5L, response.activeReservations());
         assertEquals(BigDecimal.valueOf(1000), response.totalRevenue());
+    }
+
+    // Cancel reservation
+
+    @Test
+    void shouldCancelReservation(){
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatus(ReservationStatus.CANCELLED);
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        adminService.cancelReservation(1L);
+
+        assertEquals(
+                ReservationStatus.CANCELLED,
+                reservation.getStatus()
+        );
+
+        verify(reservationRepository).save(reservation);
     }
 }

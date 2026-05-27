@@ -22,7 +22,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminController.class)
@@ -98,5 +100,16 @@ class AdminSecurityTest {
 
         mockMvc.perform(get("/admin/stats"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userShouldNotCancelReservation() throws Exception {
+
+        mockMvc.perform(
+                        patch("/admin/reservations/1/cancel")
+                                .with(csrf())
+                )
+                .andExpect(status().isForbidden());
     }
 }
