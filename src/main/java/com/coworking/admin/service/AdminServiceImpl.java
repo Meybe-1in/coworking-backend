@@ -1,6 +1,7 @@
 package com.coworking.admin.service;
 
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.exception.NotFoundException;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
@@ -10,6 +11,7 @@ import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -64,6 +66,20 @@ public class AdminServiceImpl implements AdminService {
                 .stream()
                 .map(this::mapPaymentToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void cancelReservation(Long reservationId) {
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Reserva no encontrada")
+                );
+        reservation.setStatus(ReservationStatus.CANCELLED);
+
+        reservationRepository.save(reservation);
+
     }
 
     // MAPPERS
