@@ -3,14 +3,12 @@ package com.coworking.admin.controller;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.service.AdminService;
+import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.reservation.dto.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -54,4 +52,23 @@ public class AdminController {
                 adminService.getAllPayments()
         );
     }
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                   Cancel reservation
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+    @PatchMapping("/reservations/{id}/cancel")
+    public ResponseEntity<ApiResponseDto<String>> cancelReservation(@PathVariable Long id){
+        adminService.cancelReservation(id);
+
+        return ResponseEntity.ok(
+                new ApiResponseDto<>(
+                        true,
+                        "Reserva cancelada correctamente",
+                        null
+                )
+        );
+    }
+
+
 }

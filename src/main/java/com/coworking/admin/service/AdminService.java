@@ -13,4 +13,6 @@ public interface AdminService {
     List<ReservationResponse> getAllReservations();
 
     List<PaymentResponse> getAllPayments();
+
+    void cancelReservation(Long reservationId);
 }
