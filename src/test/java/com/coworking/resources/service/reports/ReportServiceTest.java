@@ -1,7 +1,7 @@
 package com.coworking.resources.service.reports;
 
 import com.coworking.payment.repository.PaymentRepository;
-import com.coworking.reports.service.ReportServiceImple;
+import com.coworking.reports.service.ReportServiceImpl;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -32,7 +31,7 @@ class ReportServiceTest {
     private PaymentRepository paymentRepository;
 
     @InjectMocks
-    private ReportServiceImple reportService;
+    private ReportServiceImpl reportService;
 
     @Test
     void shouldGenerateReservationsCsv() {

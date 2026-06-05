@@ -12,7 +12,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ReportServiceImple implements ReportService{
+public class ReportServiceImpl implements ReportService{
 
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
