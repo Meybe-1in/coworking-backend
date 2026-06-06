@@ -6,7 +6,9 @@ import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -90,6 +92,34 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request,
                 ex.getCode()
+        );
+    }
+
+    //FALTA PARAMETRO
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingParam(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request) {
+
+        return buildError(
+                HttpStatus.BAD_REQUEST,
+                ex.getParameterName() + " es requerido",
+                request,
+                ErrorCode.BAD_REQUEST.name()
+        );
+    }
+
+    // ARGUMENTO INVALIDO
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        return buildError(
+                HttpStatus.BAD_REQUEST,
+                "Parámetro inválido",
+                request,
+                ErrorCode.BAD_REQUEST.name()
         );
     }
 
