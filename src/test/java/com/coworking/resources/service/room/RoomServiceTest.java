@@ -211,5 +211,56 @@ class RoomServiceTest {
         assertEquals(4, result.get(0).getCapacity());
         assertEquals(6, result.get(1).getCapacity());
     }
+
+    @Test
+    void updateRoom_roomNoExiste_retornaEmpty() {
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        Optional<RoomDto> result =
+                roomService.updateRoom(1L, new RoomDto());
+
+        assertTrue(result.isEmpty());
+
+        verify(roomRepository, never()).save(any(Room.class));
+    }
+
+    @Test
+    void createRoom_withoutImage_debeGuardarSala() {
+
+        Room roomSaved = new Room();
+        roomSaved.setId(1L);
+
+        when(roomRepository.save(any(Room.class)))
+                .thenReturn(roomSaved);
+
+        roomService.createRoom(baseRoomDto, null);
+
+        verify(roomRepository).save(any(Room.class));
+        verify(storageService, never()).upload(any());
+    }
+
+    @Test
+    void createRoom_withImage_debeGuardarSalaYSubirImagen() {
+
+        MockMultipartFile image = new MockMultipartFile(
+                "image",
+                "test.jpg",
+                "image/jpeg",
+                "contenido".getBytes()
+        );
+
+        when(storageService.upload(image))
+                .thenReturn("/uploads/test.jpg");
+
+        when(roomRepository.save(any(Room.class)))
+                .thenReturn(new Room());
+
+        roomService.createRoom(baseRoomDto, image);
+
+        verify(storageService).upload(image);
+        verify(roomRepository).save(any(Room.class));
+    }
 }
 
