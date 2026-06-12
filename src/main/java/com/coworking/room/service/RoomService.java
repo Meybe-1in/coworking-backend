@@ -10,6 +10,7 @@ import com.coworking.storage.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
@@ -88,6 +89,7 @@ public class RoomService {
                 .map(this::mapToDto);
     }
 
+    @Transactional
     public RoomDto createRoom(RoomDto dto, MultipartFile image){
 
         Room room = mapToEntity(dto);
