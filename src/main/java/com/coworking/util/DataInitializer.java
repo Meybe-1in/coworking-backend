@@ -6,11 +6,13 @@ import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+@Profile("dev")
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -30,10 +32,12 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // CREAR ADMIN POR DEFECTO
-        if (userRepository.findByEmail("admin@coworking.com").isEmpty()) {
+        if (userRepository.findByUsername("admin").isEmpty()
+        ) {
 
             Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                     .orElseThrow(() -> new RuntimeException("ROLE_ADMIN no encontrado"));
+
 
             User admin = new User();
 
