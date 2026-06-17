@@ -102,7 +102,7 @@ public class RoomService {
         return mapToDto(roomRepository.save(room));
     }
 
-    public Optional<RoomDto> updateRoom(Long id, RoomDto dto){
+    public Optional<RoomDto> updateRoom(Long id, RoomDto dto, MultipartFile image){
 
         return roomRepository.findById(id).map(room -> {
 
@@ -111,9 +111,13 @@ public class RoomService {
             room.setCapacity(dto.getCapacity());
             room.setAvailable(dto.isAvailable());
             room.setPrice(dto.getPrice());
-            room.setImageUrl(dto.getImageUrl());
             room.setLocation(dto.getLocation());
             room.setFeatures(dto.getFeatures());
+
+            if (image != null && !image.isEmpty()) {
+                String imageUrl = storageService.upload(image);
+                room.setImageUrl(imageUrl);
+            }
 
             return mapToDto(roomRepository.save(room));
         });

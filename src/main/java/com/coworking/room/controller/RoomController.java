@@ -40,11 +40,14 @@ public class RoomController {
     }
 
     //Actualizar
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Actualizar sala existente(solo ADMIN)")
-    public ResponseEntity<RoomDto> actualizarRoom(@PathVariable Long id, @RequestBody RoomDto dto){
-        return roomService.updateRoom(id, dto)
+    public ResponseEntity<RoomDto> actualizarRoom(
+            @PathVariable Long id,
+            @RequestPart("room") RoomDto dto,
+            @RequestPart(value = "image", required = false) MultipartFile image){
+        return roomService.updateRoom(id, dto, image)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

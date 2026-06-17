@@ -35,6 +35,7 @@ class RoomServiceTest {
 
     private Room room;
     private RoomDto baseRoomDto;
+    private MockMultipartFile image;
 
     @BeforeEach
     void setUp() {
@@ -62,6 +63,13 @@ class RoomServiceTest {
         baseRoomDto.setLocation("Ubicación Test");
         baseRoomDto.setFeatures(List.of("Wifi", "Pizarra"));
         baseRoomDto.setImageUrl("/uploads/mock-image.jpg");
+
+        image = new MockMultipartFile(
+                "image",
+                "test.jpg",
+                "image/jpeg",
+                "contenido".getBytes()
+        );
 
     }
 
@@ -141,31 +149,6 @@ class RoomServiceTest {
     }
 
     @Test
-    void updateRoom_updatesExistingRoom() {
-        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-
-        RoomDto dto = new RoomDto();
-        dto.setName("Sala modificada");
-        dto.setDescription("Actualizada");
-        dto.setCapacity(15);
-        dto.setPrice(new BigDecimal("15.00"));
-        dto.setAvailable(false);
-        // Mantenemos la URL existente o la omitimos si el DTO no la incluye
-        dto.setImageUrl(room.getImageUrl());
-        // Configurar el save para devolver la misma entidad modificada
-        when(roomRepository.save(any(Room.class))).thenReturn(room);
-
-        Optional<RoomDto> result = roomService.updateRoom(1L, dto);
-
-        assertTrue(result.isPresent());
-        assertEquals("Sala modificada", result.get().getName());
-        assertEquals(15, result.get().getCapacity());
-        assertEquals(new BigDecimal("15.00"), result.get().getPrice());
-        // Verificamos que la URL de imagen no se perdió si se incluyó en el DTO
-        assertEquals("/uploads/mock-image.jpg", result.get().getImageUrl());
-    }
-
-    @Test
     void getRoomById_notFound_returnsEmpty() {
         when(roomRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -219,7 +202,7 @@ class RoomServiceTest {
                 .thenReturn(Optional.empty());
 
         Optional<RoomDto> result =
-                roomService.updateRoom(1L, new RoomDto());
+                roomService.updateRoom(1L, new RoomDto(), image);
 
         assertTrue(result.isEmpty());
 
@@ -262,5 +245,67 @@ class RoomServiceTest {
         verify(storageService).upload(image);
         verify(roomRepository).save(any(Room.class));
     }
+    //update
+    @Test
+    void updateRoom_updatesExistingRoom_withoutImage() {
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(room));
+
+        when(roomRepository.save(any(Room.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        RoomDto dto = new RoomDto();
+        dto.setName("Sala modificada");
+        dto.setDescription("Actualizada");
+        dto.setCapacity(15);
+        dto.setPrice(new BigDecimal("15.00"));
+        dto.setAvailable(false);
+        dto.setLocation("Nueva ubicación");
+        dto.setFeatures(List.of("Wifi"));
+
+        Optional<RoomDto> result =
+                roomService.updateRoom(1L, dto, null);
+
+        assertTrue(result.isPresent());
+        assertEquals("Sala modificada", result.get().getName());
+        assertEquals(15, result.get().getCapacity());
+        assertEquals(new BigDecimal("15.00"), result.get().getPrice());
+
+        verify(storageService, never()).upload(any());
+    }
+
+    @Test
+    void updateRoom_withImage_updatesImageUrl() {
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(room));
+
+        when(storageService.upload(image))
+                .thenReturn("/uploads/new-image.jpg");
+
+        when(roomRepository.save(any(Room.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        RoomDto dto = new RoomDto();
+        dto.setName("Sala modificada");
+        dto.setDescription("Actualizada");
+        dto.setCapacity(15);
+        dto.setPrice(new BigDecimal("15.00"));
+        dto.setAvailable(false);
+
+        Optional<RoomDto> result =
+                roomService.updateRoom(1L, dto, image);
+
+        assertTrue(result.isPresent());
+
+        assertEquals(
+                "/uploads/new-image.jpg",
+                result.get().getImageUrl()
+        );
+
+        verify(storageService).upload(image);
+    }
+
 }
 
