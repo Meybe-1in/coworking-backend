@@ -75,11 +75,11 @@ public class RoomControllerSecurityTest {
                         "",
                         "application/json",
                         """
-                        {
-                          "name":"Sala Nueva",
-                          "capacity":10
-                        }
-                        """.getBytes()
+                                {
+                                  "name":"Sala Nueva",
+                                  "capacity":10
+                                }
+                                """.getBytes()
                 );
 
         mockMvc.perform(
@@ -99,19 +99,29 @@ public class RoomControllerSecurityTest {
         dto.setId(1L);
         dto.setName("Sala Editada");
 
-        when(roomService.updateRoom(eq(1L), any(RoomDto.class)))
+        when(roomService.updateRoom(eq(1L), any(RoomDto.class), any()))
                 .thenReturn(Optional.of(dto));
 
+        MockMultipartFile room =
+                new MockMultipartFile(
+                        "room",
+                        "",
+                        "application/json",
+                        """
+                                {
+                                  "name":"Sala Editada"
+                                }
+                                """.getBytes()
+                );
+
         mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                                .put("/api/rooms/1")
-                                .contentType("application/json")
-                                .content("""
-                        {
-                          "name":"Sala Editada"
-                        }
-                    """)
+                        multipart("/api/rooms/1")
+                                .file(room)
                                 .with(csrf())
+                                .with(request -> {
+                                    request.setMethod("PUT");
+                                    return request;
+                                })
                 )
                 .andExpect(status().isOk());
     }
