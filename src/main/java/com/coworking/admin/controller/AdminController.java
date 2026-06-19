@@ -2,6 +2,7 @@ package com.coworking.admin.controller;
 
 
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
@@ -23,7 +24,7 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                      Dashboard stats
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-
+    // Devuelve métricas generales para el dashboard administrativo
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getStats(){
         return  ResponseEntity.ok(
@@ -34,7 +35,7 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                     All reservations
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-
+    // Obtiene todas las reservas registradas en el sistema
     @GetMapping("/reservations")
     public ResponseEntity<List<ReservationResponse>> getReservations(){
         return ResponseEntity.ok(
@@ -45,7 +46,7 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                       All payments
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-
+    // Obtiene todos los pagos registrados
     @GetMapping("/payments")
     public ResponseEntity<List<PaymentResponse>> getPayments(){
         return ResponseEntity.ok(
@@ -56,7 +57,7 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                   Cancel reservation
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-
+    // Permite cancelar una reserva desde el panel administrativo
     @PatchMapping("/reservations/{id}/cancel")
     public ResponseEntity<ApiResponseDto<String>> cancelReservation(@PathVariable Long id){
         adminService.cancelReservation(id);
@@ -70,5 +71,15 @@ public class AdminController {
         );
     }
 
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                         All Users
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Obtiene todos los usuarios registrados para administración
+    @GetMapping("/users")
+    public ResponseEntity<List<UserAdminResponse>> getUsers(){
+        return ResponseEntity.ok(
+                adminService.getAllUsers()
+        );
+    }
 
 }

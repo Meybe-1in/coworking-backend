@@ -2,6 +2,7 @@ package com.coworking.resources.controller.admin;
 
 import com.coworking.admin.controller.AdminController;
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.enums.PaymentStatus;
@@ -22,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -144,5 +146,28 @@ class AdminControllerTest {
 
         verify(adminService)
                 .cancelReservation(1L);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnAllUsers() throws Exception {
+        UserAdminResponse user =
+                new UserAdminResponse(
+                        1L,
+                        "dayana",
+                        "dayana@gmail.com",
+                        Set.of("ROLE_USER"),
+                        true
+                );
+
+        when(adminService.getAllUsers())
+                .thenReturn(List.of(user));
+
+        mockMvc.perform(get("/admin/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].username")
+                        .value("dayana"))
+                .andExpect(jsonPath("$[0].email")
+                        .value("dayana@gmail.com"));
     }
 }
