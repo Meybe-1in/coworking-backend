@@ -12,5 +12,6 @@ public enum ErrorCode {
     NOT_FOUND,
     BAD_REQUEST,
     UNAUTHORIZED,
-    INTERNAL_ERROR
+    INTERNAL_ERROR,
+    CONFLICT;
 }

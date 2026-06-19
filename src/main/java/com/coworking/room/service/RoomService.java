@@ -1,5 +1,6 @@
 package com.coworking.room.service;
 
+import com.coworking.exception.RoomHasReservationsException;
 import com.coworking.room.dto.RoomAvailabilityResponse;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.reservation.model.Reservation;
@@ -8,6 +9,7 @@ import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.room.repository.RoomRepository;
 import com.coworking.storage.service.StorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,12 +125,21 @@ public class RoomService {
         });
     }
 
+    @Transactional
     public boolean deleteRoom(Long id){
 
-        if(!roomRepository.existsById(id)) return false;
+        if(!roomRepository.existsById(id)) {
+            return false;
+        }
 
-        roomRepository.deleteById(id);
-        return true;
+        try {
+            roomRepository.deleteById(id);
+            roomRepository.flush();
+
+            return true;
+        } catch (DataIntegrityViolationException ex) {
+            throw new RoomHasReservationsException();
+        }
     }
 
     // ROOM AVAILABILITY

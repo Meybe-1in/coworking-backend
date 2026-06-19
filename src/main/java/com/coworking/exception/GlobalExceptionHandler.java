@@ -81,6 +81,19 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(RoomHasReservationsException.class)
+    public ResponseEntity<ApiError> handleRoomHasReservations(
+            RoomHasReservationsException ex,
+            HttpServletRequest request) {
+
+        return buildError(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request,
+                ErrorCode.CONFLICT.name()
+        );
+    }
+
     // CONFLICT (reservas)
     @ExceptionHandler(ReservationConflictException.class)
     public ResponseEntity<ApiError> handleConflict(
