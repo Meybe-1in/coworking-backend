@@ -112,4 +112,21 @@ class AdminSecurityTest {
                 )
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userShouldNotAccessUsers() throws Exception {
+
+        mockMvc.perform(get("/admin/users"))
+                .andExpect(status().isForbidden());
+    }
+
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldAccessUsers() throws Exception {
+
+        mockMvc.perform(get("/admin/users"))
+                .andExpect(status().isOk());
+    }
 }
