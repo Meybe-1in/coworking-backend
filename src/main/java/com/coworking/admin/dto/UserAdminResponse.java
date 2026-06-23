@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -20,4 +21,6 @@ public class UserAdminResponse {
     private Set<String> roles;
 
     private boolean enabled;
+
+    private LocalDateTime createdAt;
 }

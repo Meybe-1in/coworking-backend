@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,5 +40,6 @@ public class User {
     )
 
     private Set<Role> roles = new HashSet<>();
+    private LocalDateTime createdAt;
 
 }

@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -157,7 +158,8 @@ class AdminControllerTest {
                         "dayana",
                         "dayana@gmail.com",
                         Set.of("ROLE_USER"),
-                        true
+                        true,
+                        LocalDateTime.now()
                 );
 
         when(adminService.getAllUsers())

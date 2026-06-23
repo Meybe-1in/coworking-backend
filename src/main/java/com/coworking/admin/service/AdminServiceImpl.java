@@ -146,7 +146,8 @@ public class AdminServiceImpl implements AdminService {
                 user.getUsername(),
                 user.getEmail(),
                 roles,
-                user.isEnabled()
+                user.isEnabled(),
+                user.getCreatedAt()
         );
     }
 }
