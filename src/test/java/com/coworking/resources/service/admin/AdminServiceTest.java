@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.security.PrivateKey;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -101,12 +102,15 @@ class AdminServiceTest {
         Role role = new Role();
         role.setName("ROLE_USER");
 
+        LocalDateTime creationTime = LocalDateTime.now();
+
         User user = new User();
         user.setId(1L);
         user.setUsername("dayana");
         user.setEmail("dayana@gmail.com");
         user.setEnabled(true);
         user.setRoles(Set.of(role));
+        user.setCreatedAt(creationTime);
 
         when(userRepository.findAll())
                 .thenReturn(List.of(user));
@@ -137,6 +141,11 @@ class AdminServiceTest {
         assertTrue(
                 result.getFirst()
                         .isEnabled()
+        );
+
+        assertEquals(
+                creationTime, result.getFirst()
+                        .getCreatedAt()
         );
 
         verify(userRepository).findAll();
