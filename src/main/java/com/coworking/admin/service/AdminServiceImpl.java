@@ -35,6 +35,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$";
 
     @Override
     public AdminStatsResponse getStats() {
@@ -113,6 +114,12 @@ public class AdminServiceImpl implements AdminService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException(
                     "El correo ya está registrado"
+            );
+        }
+
+        if (!request.getPassword().matches(PASSWORD_REGEX)) {
+            throw new BadRequestException(
+                    "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial"
             );
         }
 
