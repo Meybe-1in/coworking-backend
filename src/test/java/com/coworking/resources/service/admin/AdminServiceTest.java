@@ -1,13 +1,17 @@
 package com.coworking.resources.service.admin;
 
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.CreateAdminRequest;
 import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminServiceImpl;
+import com.coworking.exception.BadRequestException;
+import com.coworking.exception.NotFoundException;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.role.model.Role;
+import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.security.PrivateKey;
@@ -23,8 +28,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +44,12 @@ class AdminServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AdminServiceImpl adminService;
@@ -149,5 +160,155 @@ class AdminServiceTest {
         );
 
         verify(userRepository).findAll();
+    }
+
+    //create admin
+    @Test
+    void shouldCreateAdminSuccessfully() {
+
+        // Verifica que un administrador pueda ser creado correctamente
+        // cuando username y email no existen previamente.
+
+        CreateAdminRequest request = new CreateAdminRequest();
+
+        request.setUsername("admin");
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123.");
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        when(userRepository.existsByUsername("admin"))
+                .thenReturn(false);
+
+        when(userRepository.existsByEmail("admin@test.com"))
+                .thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.of(adminRole));
+
+        when(passwordEncoder.encode("Password123."))
+                .thenReturn("encodedPassword");
+
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setUsername("admin");
+        savedUser.setEmail("admin@test.com");
+        savedUser.setEnabled(true);
+        savedUser.setRoles(Set.of(adminRole));
+        savedUser.setCreatedAt(LocalDateTime.now());
+
+        when(userRepository.save(any(User.class)))
+                .thenReturn(savedUser);
+
+        UserAdminResponse response =
+                adminService.createAdmin(request);
+
+        assertEquals("admin", response.getUsername());
+        assertEquals("admin@test.com", response.getEmail());
+
+        assertTrue(
+                response.getRoles()
+                        .contains("ROLE_ADMIN")
+        );
+
+        verify(userRepository).save(any(User.class));
+    }
+
+    //usuarios mismo username
+    @Test
+    void shouldThrowExceptionWhenUsernameAlreadyExists() {
+
+        // Verifica que el sistema rechace la creación
+        // cuando el nombre de usuario ya existe.
+
+        CreateAdminRequest request = new CreateAdminRequest();
+
+        request.setUsername("admin");
+        request.setEmail("nuevo@test.com");
+        request.setPassword("Password123.");
+
+        when(userRepository.existsByUsername("admin"))
+                .thenReturn(true);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.createAdmin(request)
+                );
+
+        assertEquals(
+                "El nombre de usuario ya existe",
+                exception.getMessage()
+        );
+
+        verify(userRepository).existsByUsername("admin");
+    }
+
+    //email duplicado
+    @Test
+    void shouldThrowExceptionWhenEmailAlreadyExists() {
+
+        // Verifica que el sistema rechace la creación
+        // cuando el correo ya está registrado.
+
+        CreateAdminRequest request = new CreateAdminRequest();
+
+        request.setUsername("admin");
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123.");
+
+        when(userRepository.existsByUsername("admin"))
+                .thenReturn(false);
+
+        when(userRepository.existsByEmail("admin@test.com"))
+                .thenReturn(true);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.createAdmin(request)
+                );
+
+        assertEquals(
+                "El correo ya está registrado",
+                exception.getMessage()
+        );
+
+        verify(userRepository).existsByEmail("admin@test.com");
+    }
+
+    //rol inexistente
+    @Test
+    void shouldThrowExceptionWhenAdminRoleDoesNotExist() {
+
+        // Verifica que se lance una excepción
+        // si el rol ROLE_ADMIN no existe.
+
+        CreateAdminRequest request = new CreateAdminRequest();
+
+        request.setUsername("admin");
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123.");
+
+        when(userRepository.existsByUsername("admin"))
+                .thenReturn(false);
+
+        when(userRepository.existsByEmail("admin@test.com"))
+                .thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.createAdmin(request)
+                );
+
+        assertEquals(
+                "Rol ADMIN no encontrado",
+                exception.getMessage()
+        );
     }
 }
