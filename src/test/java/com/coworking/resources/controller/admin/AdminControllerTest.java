@@ -2,6 +2,7 @@ package com.coworking.resources.controller.admin;
 
 import com.coworking.admin.controller.AdminController;
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.CreateAdminRequest;
 import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.payment.dto.PaymentResponse;
@@ -29,8 +30,7 @@ import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AdminController.class)
@@ -171,5 +171,43 @@ class AdminControllerTest {
                         .value("dayana"))
                 .andExpect(jsonPath("$[0].email")
                         .value("dayana@gmail.com"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldCreateAdmin() throws Exception {
+
+        CreateAdminRequest request = new CreateAdminRequest();
+
+        request.setUsername("admin2");
+        request.setEmail("admin@test.com");
+        request.setPassword("Password123.");
+
+        UserAdminResponse response =
+                new UserAdminResponse(
+                        10L,
+                        "admin2",
+                        "admin@test.com",
+                        Set.of("ROLE_ADMIN"),
+                        true,
+                        LocalDateTime.now()
+                );
+
+        when(adminService.createAdmin(any()))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        post("/admin/users/admin")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username")
+                        .value("admin2"))
+                .andExpect(jsonPath("$.email")
+                        .value("admin@test.com"));
     }
 }

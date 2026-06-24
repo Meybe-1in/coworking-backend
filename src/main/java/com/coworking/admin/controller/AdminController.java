@@ -2,12 +2,18 @@ package com.coworking.admin.controller;
 
 
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.CreateAdminRequest;
 import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.reservation.dto.ReservationResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -79,6 +85,26 @@ public class AdminController {
     public ResponseEntity<List<UserAdminResponse>> getUsers(){
         return ResponseEntity.ok(
                 adminService.getAllUsers()
+        );
+    }
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                         create Admin
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Permite a un administrador crear nuevas cuentas administrativas
+    @Operation(
+            summary = "Crear administrador",
+            description = "Permite registrar una nueva cuenta con rol ADMIN"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Administrador creado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario duplicado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
+    @PostMapping("/users/admin")
+    public ResponseEntity<UserAdminResponse> createAdmin(@Valid @RequestBody CreateAdminRequest request){
+        return ResponseEntity.ok(
+                adminService.createAdmin(request)
         );
     }
 

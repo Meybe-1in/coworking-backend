@@ -1,7 +1,9 @@
 package com.coworking.admin.service;
 
 import com.coworking.admin.dto.AdminStatsResponse;
+import com.coworking.admin.dto.CreateAdminRequest;
 import com.coworking.admin.dto.UserAdminResponse;
+import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.model.Payment;
@@ -11,12 +13,15 @@ import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.role.model.Role;
+import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +33,9 @@ public class AdminServiceImpl implements AdminService {
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$";
 
     @Override
     public AdminStatsResponse getStats() {
@@ -91,6 +99,46 @@ public class AdminServiceImpl implements AdminService {
 
         reservationRepository.save(reservation);
 
+    }
+
+    // Crear usuario admin
+    @Override
+    @Transactional
+    public UserAdminResponse createAdmin(CreateAdminRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BadRequestException(
+                    "El nombre de usuario ya existe"
+            );
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException(
+                    "El correo ya está registrado"
+            );
+        }
+
+        if (!request.getPassword().matches(PASSWORD_REGEX)) {
+            throw new BadRequestException(
+                    "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial"
+            );
+        }
+
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() ->
+                        new NotFoundException("Rol ADMIN no encontrado")
+                );
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(
+                passwordEncoder.encode(request.getPassword())
+        );
+        user.setRoles(Set.of(adminRole));
+        user.setEnabled(true);
+        user.setCreatedAt(LocalDateTime.now());
+        User savedUser = userRepository.save(user);
+        return mapToUserAdminResponse(savedUser);
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa

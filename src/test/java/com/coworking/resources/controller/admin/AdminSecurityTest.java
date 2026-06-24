@@ -23,8 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminController.class)
@@ -128,5 +127,24 @@ class AdminSecurityTest {
 
         mockMvc.perform(get("/admin/users"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userShouldNotCreateAdmin() throws Exception {
+
+        mockMvc.perform(
+                        post("/admin/users/admin")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("""
+                                    {
+                                      "username":"admin",
+                                      "email":"admin@test.com",
+                                      "password":"Password123."
+                                    }
+                                    """)
+                )
+                .andExpect(status().isForbidden());
     }
 }
