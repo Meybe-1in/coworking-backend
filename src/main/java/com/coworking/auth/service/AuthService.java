@@ -125,7 +125,7 @@ public class AuthService {
                 .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
 
         if (!user.isEnabled()) {
-            throw new BadRequestException("ACCOUNT_NOT_ENABLED");
+            throw new BadRequestException("ACCOUNT_DISABLED");
         }
 
         if (!user.isEmailVerified()){
