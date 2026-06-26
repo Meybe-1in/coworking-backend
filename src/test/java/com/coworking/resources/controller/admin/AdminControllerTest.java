@@ -3,6 +3,7 @@ package com.coworking.resources.controller.admin;
 import com.coworking.admin.controller.AdminController;
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.CreateAdminRequest;
+import com.coworking.admin.dto.UpdateUserStatusRequest;
 import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.payment.dto.PaymentResponse;
@@ -210,4 +211,40 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.email")
                         .value("admin@test.com"));
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldUpdateUserStatus() throws Exception {
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(false);
+
+        UserAdminResponse response =
+                new UserAdminResponse(
+                        1L,
+                        "dayana",
+                        "dayana@test.com",
+                        Set.of("ROLE_USER"),
+                        false,
+                        LocalDateTime.now()
+                );
+
+        when(adminService.updateUserStatus(
+                eq(1L),
+                any(UpdateUserStatusRequest.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                        patch("/admin/users/1/status")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled")
+                        .value(false));
+    }
+
 }

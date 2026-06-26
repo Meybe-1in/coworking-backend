@@ -1,8 +1,6 @@
 package com.coworking.admin.service;
 
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.CreateAdminRequest;
-import com.coworking.admin.dto.UserAdminResponse;
+import com.coworking.admin.dto.*;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.dto.PaymentResponse;
@@ -141,8 +139,30 @@ public class AdminServiceImpl implements AdminService {
         return mapToUserAdminResponse(savedUser);
     }
 
+    // Actualiza el estado principal de un usuario
+    @Override
+    public UserAdminResponse updateUserStatus(Long userId, UpdateUserStatusRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario no encontrado")
+                );
+
+        if (request.getEnabled() == null) {
+            throw new BadRequestException("El estado del usuario debe ser true o false");
+        }
+
+        if (user.isEnabled() == request.getEnabled()) {
+            throw new BadRequestException("El usuario ya tiene ese estado");
+        }
+
+        user.setEnabled(request.getEnabled());
+        userRepository.save(user);
+        return mapToUserAdminResponse(user);
+    }
+
     // Obtiene todos los usuarios registrados para la vista administrativa
-    public List<UserAdminResponse> getAllUsers(){
+    public List<UserAdminResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()
                 .map(this::mapToUserAdminResponse)
@@ -183,7 +203,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     // Convierte una entidad User a UserAdminResponse
-    private UserAdminResponse mapToUserAdminResponse(User user){
+    private UserAdminResponse mapToUserAdminResponse(User user) {
         Set<String> roles = user.getRoles()
                 .stream()
                 .map(Role::getName)

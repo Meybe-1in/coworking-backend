@@ -2,6 +2,7 @@ package com.coworking.resources.service.admin;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.CreateAdminRequest;
+import com.coworking.admin.dto.UpdateUserStatusRequest;
 import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
@@ -22,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
-import java.security.PrivateKey;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -308,6 +308,103 @@ class AdminServiceTest {
 
         assertEquals(
                 "Rol ADMIN no encontrado",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldEnableUserSuccessfully() {
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setEnabled(false);
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(true);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        UserAdminResponse response =
+                adminService.updateUserStatus(1L, request);
+
+        assertTrue(response.isEnabled());
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldDisableUserSuccessfully() {
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setEnabled(true);
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(false);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        UserAdminResponse response =
+                adminService.updateUserStatus(1L, request);
+
+        assertFalse(response.isEnabled());
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowWhenUserNotFound() {
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(false);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.updateUserStatus(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "Usuario no encontrado",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldThrowWhenStatusIsNull() {
+
+        User user = new User();
+        user.setId(1L);
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(null);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUserStatus(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "El estado del usuario debe ser true o false",
                 exception.getMessage()
         );
     }

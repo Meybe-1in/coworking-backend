@@ -147,4 +147,38 @@ class AdminSecurityTest {
                 )
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userShouldNotUpdateUserStatus() throws Exception {
+
+        mockMvc.perform(
+                        patch("/admin/users/1/status")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "enabled": false
+                                }
+                                """)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldUpdateUserStatus() throws Exception {
+
+        mockMvc.perform(
+                        patch("/admin/users/1/status")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "enabled": false
+                                }
+                                """)
+                )
+                .andExpect(status().isOk());
+    }
 }
