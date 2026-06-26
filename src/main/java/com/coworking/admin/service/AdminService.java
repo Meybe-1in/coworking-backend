@@ -1,8 +1,6 @@
 package com.coworking.admin.service;
 
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.CreateAdminRequest;
-import com.coworking.admin.dto.UserAdminResponse;
+import com.coworking.admin.dto.*;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.reservation.dto.ReservationResponse;
 
@@ -27,4 +25,7 @@ public interface AdminService {
 
     //Crear usuario administrador
     UserAdminResponse createAdmin(CreateAdminRequest request);
+
+    // Actualizar estado de usuario
+    UserAdminResponse updateUserStatus(Long userId, UpdateUserStatusRequest request);
 }
