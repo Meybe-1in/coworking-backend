@@ -101,7 +101,7 @@ public class AdminController {
     //                         Update User Status
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // permite a un administrador actualizar estado de usuario
-    @PatchMapping("/user/{is}/status")
+    @PatchMapping("/users/{id}/status")
     @Operation(summary = "Actualizar estado de usuario", description = "Activa o desactiva una cuenta de usuario")
     @ApiResponses({@ApiResponse(responseCode = "200", description = "Estado actualizado correctamente"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
