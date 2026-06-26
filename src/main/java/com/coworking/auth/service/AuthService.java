@@ -109,6 +109,7 @@ public class AuthService {
 
         User user = verificationToken.getUser();
         user.setEnabled(true);
+        user.setEmailVerified(true);
         userRepository.save(user);
 
         response.sendRedirect("http://localhost:5173/verify-success");
