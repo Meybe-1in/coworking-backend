@@ -65,7 +65,8 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(role));
-        user.setEnabled(false);
+        user.setEnabled(true);
+        user.setEmailVerified(false);
 
         userRepository.save(user);
 
@@ -124,6 +125,10 @@ public class AuthService {
                 .orElseThrow(() -> new BadCredentialsException("Credenciales incorrectas"));
 
         if (!user.isEnabled()) {
+            throw new BadRequestException("ACCOUNT_NOT_ENABLED");
+        }
+
+        if (!user.isEmailVerified()){
             throw new BadRequestException("EMAIL_NOT_VERIFIED");
         }
 
@@ -177,7 +182,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
-        if (user.isEnabled()) {
+        if (user.isEmailVerified()) {
             throw new BadRequestException("La cuenta ya está verificada");
         }
 
