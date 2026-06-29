@@ -134,6 +134,7 @@ public class AdminServiceImpl implements AdminService {
         );
         user.setRoles(Set.of(adminRole));
         user.setEnabled(true);
+        user.setEmailVerified(true);
         user.setCreatedAt(LocalDateTime.now());
         User savedUser = userRepository.save(user);
         return mapToUserAdminResponse(savedUser);
@@ -215,6 +216,7 @@ public class AdminServiceImpl implements AdminService {
                 user.getEmail(),
                 roles,
                 user.isEnabled(),
+                user.isEmailVerified(),
                 user.getCreatedAt()
         );
     }

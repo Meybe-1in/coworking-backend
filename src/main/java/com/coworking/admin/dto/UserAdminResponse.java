@@ -22,5 +22,7 @@ public class UserAdminResponse {
 
     private boolean enabled;
 
+    private boolean emailVerified;
+
     private LocalDateTime createdAt;
 }
