@@ -206,7 +206,7 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.password").exists());
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test

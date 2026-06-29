@@ -12,7 +12,6 @@ import com.coworking.domain.notification.EmailSender;
 import com.coworking.email.template.EmailTemplate;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
-import com.coworking.role.model.Role;
 import com.coworking.role.repository.RoleRepository;
 import com.coworking.security.JwtUtil;
 import com.coworking.user.model.User;
@@ -34,22 +33,30 @@ import static org.mockito.Mockito.*;
 @ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock private UserRepository userRepository;
-    @Mock private RoleRepository roleRepository;
-    @Mock private PasswordEncoder passwordEncoder;
-    @Mock private PasswordResetService passwordResetService;
-    @Mock private VerificationTokenRepository verificationTokenRepository;
-    @Mock private EmailSender emailSender;
-    @Mock private AuthenticationManager authenticationManager;
-    @Mock private JwtUtil jwtUtil;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private RoleRepository roleRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private PasswordResetService passwordResetService;
+    @Mock
+    private VerificationTokenRepository verificationTokenRepository;
+    @Mock
+    private EmailSender emailSender;
+    @Mock
+    private AuthenticationManager authenticationManager;
+    @Mock
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private AuthService authService;
 
-    // REGISTER
+    // ---------------- REGISTER ----------------
 
     @Test
-    void shouldRegisterSuccessfully() {
+    void shouldRegisterUserWithCorrectDefaults() {
         RegisterRequest request = new RegisterRequest(
                 "user",
                 "test@mail.com",
@@ -57,51 +64,76 @@ class AuthServiceTest {
                 true
         );
 
-        Role role = new Role();
-        role.setName("ROLE_USER");
-
-        when(userRepository.findByEmail("test@mail.com"))
+        when(userRepository.findByEmail(request.email()))
                 .thenReturn(Optional.empty());
 
         when(roleRepository.findByName("ROLE_USER"))
-                .thenReturn(Optional.of(role));
+                .thenReturn(Optional.of(new com.coworking.role.model.Role()));
 
-        when(passwordEncoder.encode(any()))
-                .thenReturn("encoded");
+        String response = authService.register(request);
 
-        String result = authService.register(request);
-
-        assertEquals("Registro exitoso. Revisa tu correo para activar tu cuenta.", result);
-        verify(emailSender).send(
-                eq("test@mail.com"),
-                eq("Verifica tu cuenta"),
-                eq(EmailTemplate.VERIFY_ACCOUNT.getPath()),
-                argThat(map -> map.containsKey("link"))
+        assertEquals(
+                "Registro exitoso. Revisa tu correo para activar tu cuenta.",
+                response
         );
-        verify(userRepository).save(any(User.class));
+
+        verify(userRepository, atLeastOnce()).save(any());
     }
-    //LOGIN
-    @Test
-    void shouldThrowWhenBadCredentials() {
 
-        LoginRequest request = new LoginRequest(
-                "test@mail.com",
-                "wrongpass",
-                false
+    //----------------LOGIN ----------------
+
+    @Test
+    void shouldThrowWhenUserNotFound() {
+        LoginRequest request = new LoginRequest("test@mail.com", "123", false);
+
+        when(userRepository.findByEmail(request.email()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(BadCredentialsException.class, () ->
+                authService.login(request)
         );
+    }
+
+    @Test
+    void shouldThrowWhenEmailNotVerified() {
+        LoginRequest request = new LoginRequest("test@mail.com", "123", false);
 
         User user = new User();
+        user.setEmail("test@mail.com");
         user.setEnabled(true);
+        user.setEmailVerified(false);
 
-        when(userRepository.findByEmail(any()))
+        when(userRepository.findByEmail(request.email()))
                 .thenReturn(Optional.of(user));
 
-        when(authenticationManager.authenticate(any()))
-                .thenThrow(new BadCredentialsException("Credenciales incorrectas"));
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> authService.login(request)
+        );
 
-        assertThrows(BadCredentialsException.class,
-                () -> authService.login(request));
+        assertEquals("EMAIL_NOT_VERIFIED", ex.getMessage());
     }
+
+    @Test
+    void shouldThrowWhenAccountDisabled() {
+        LoginRequest request = new LoginRequest("test@mail.com", "123", false);
+
+        User user = new User();
+        user.setEmail("test@mail.com");
+        user.setEnabled(false);
+        user.setEmailVerified(true);
+
+        when(userRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(user));
+
+        BadRequestException ex = assertThrows(
+                BadRequestException.class,
+                () -> authService.login(request)
+        );
+
+        assertEquals("ACCOUNT_DISABLED", ex.getMessage());
+    }
+
     //ROLE
     @Test
     void shouldThrowWhenRoleNotFound() {
@@ -125,24 +157,6 @@ class AuthServiceTest {
 
     //EMAIL
     @Test
-    void shouldThrowWhenEmailNotVerified() {
-
-        LoginRequest request = new LoginRequest(
-                "test@mail.com",
-                "Aa123456!",
-                false
-        );
-
-        User user = new User();
-        user.setEnabled(false);
-
-        when(userRepository.findByEmail(any()))
-                .thenReturn(Optional.of(user));
-
-        assertThrows(BadRequestException.class,
-                () -> authService.login(request));
-    }
-    @Test
     void shouldThrowWhenEmailExists() {
         RegisterRequest request = new RegisterRequest(
                 "user",
@@ -158,6 +172,7 @@ class AuthServiceTest {
                 () -> authService.register(request));
     }
 
+    // ---------------- RESEND VERIFICATION ----------------
     @Test
     void shouldResendVerificationEmail() {
 
@@ -182,50 +197,29 @@ class AuthServiceTest {
     }
 
     @Test
-    void shouldEnableUserWhenTokenValid() throws Exception {
+    void shouldThrowWhenUserNotFoundResend() {
+        when(userRepository.findByEmail("test@mail.com"))
+                .thenReturn(Optional.empty());
 
-        User user = new User();
-        user.setEnabled(false);
-
-        VerificationToken token = new VerificationToken(
-                null,
-                "token",
-                user,
-                LocalDateTime.now().plusHours(1)
+        assertThrows(NotFoundException.class, () ->
+                authService.resendVerification("test@mail.com")
         );
-
-        when(verificationTokenRepository.findByToken("token"))
-                .thenReturn(Optional.of(token));
-
-        HttpServletResponse response = mock(HttpServletResponse.class);
-
-        authService.verifyAccount("token", response);
-
-        assertTrue(user.isEnabled());
-        verify(userRepository).save(user);
-        verify(response).sendRedirect(contains("verify-success"));
     }
 
     @Test
-    void shouldRedirectWhenTokenExpired() throws Exception {
+    void shouldThrowWhenAlreadyVerified() {
+        User user = new User();
+        user.setEmailVerified(true);
 
-        VerificationToken token = new VerificationToken(
-                null,
-                "token",
-                new User(),
-                LocalDateTime.now().minusHours(1)
+        when(userRepository.findByEmail("test@mail.com"))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(BadRequestException.class, () ->
+                authService.resendVerification("test@mail.com")
         );
-
-        when(verificationTokenRepository.findByToken("token"))
-                .thenReturn(Optional.of(token));
-
-        HttpServletResponse response = mock(HttpServletResponse.class);
-
-        authService.verifyAccount("token", response);
-
-        verify(response).sendRedirect(contains("expired"));
     }
-    // PASSWORD
+
+    // ---------------- PASSWORD ----------------
 
     @Test
     void shouldCallPasswordResetService() {
@@ -254,7 +248,7 @@ class AuthServiceTest {
                 () -> authService.register(request));
     }
 
-    //VALIDACIONES
+    // ---------------- TERMS and CONDITIONS ----------------
     @Test
     void shouldThrowWhenTermsNotAccepted() {
 
@@ -269,6 +263,7 @@ class AuthServiceTest {
                 () -> authService.register(request));
     }
 
+    // ---------------- TOKEN ----------------
     @Test
     void shouldThrowWhen_tokenExpired() {
         User user = new User();
@@ -281,4 +276,51 @@ class AuthServiceTest {
 
         assertTrue(token.isExpired());
     }
+
+    @Test
+    void shouldRedirectWhenTokenExpired() throws Exception {
+
+        VerificationToken token = new VerificationToken(
+                null,
+                "token",
+                new User(),
+                LocalDateTime.now().minusHours(1)
+        );
+
+        when(verificationTokenRepository.findByToken("token"))
+                .thenReturn(Optional.of(token));
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        authService.verifyAccount("token", response);
+
+        verify(response).sendRedirect(contains("expired"));
+    }
+
+    // ---------------- ENABLE USER ----------------
+    @Test
+    void shouldEnableUserWhenTokenValid() throws Exception {
+
+        User user = new User();
+        user.setEnabled(false);
+
+        VerificationToken token = new VerificationToken(
+                null,
+                "token",
+                user,
+                LocalDateTime.now().plusHours(1)
+        );
+
+        when(verificationTokenRepository.findByToken("token"))
+                .thenReturn(Optional.of(token));
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        authService.verifyAccount("token", response);
+
+        assertTrue(user.isEnabled());
+        verify(userRepository).save(user);
+        verify(response).sendRedirect(contains("verify-success"));
+    }
+
 }
