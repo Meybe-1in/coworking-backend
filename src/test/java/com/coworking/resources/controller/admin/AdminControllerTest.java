@@ -160,6 +160,7 @@ class AdminControllerTest {
                         "dayana@gmail.com",
                         Set.of("ROLE_USER"),
                         true,
+                        true,
                         LocalDateTime.now()
                 );
 
@@ -190,6 +191,7 @@ class AdminControllerTest {
                         "admin2",
                         "admin@test.com",
                         Set.of("ROLE_ADMIN"),
+                        true,
                         true,
                         LocalDateTime.now()
                 );
@@ -225,6 +227,7 @@ class AdminControllerTest {
                         "dayana",
                         "dayana@test.com",
                         Set.of("ROLE_USER"),
+                        false,
                         false,
                         LocalDateTime.now()
                 );

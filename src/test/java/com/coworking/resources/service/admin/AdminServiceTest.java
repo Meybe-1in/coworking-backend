@@ -120,6 +120,7 @@ class AdminServiceTest {
         user.setUsername("dayana");
         user.setEmail("dayana@gmail.com");
         user.setEnabled(true);
+        user.setEmailVerified(true);
         user.setRoles(Set.of(role));
         user.setCreatedAt(creationTime);
 
@@ -152,6 +153,11 @@ class AdminServiceTest {
         assertTrue(
                 result.getFirst()
                         .isEnabled()
+        );
+
+        assertTrue(
+                result.getFirst()
+                        .isEmailVerified()
         );
 
         assertEquals(
@@ -195,6 +201,7 @@ class AdminServiceTest {
         savedUser.setUsername("admin");
         savedUser.setEmail("admin@test.com");
         savedUser.setEnabled(true);
+        savedUser.setEmailVerified(true);
         savedUser.setRoles(Set.of(adminRole));
         savedUser.setCreatedAt(LocalDateTime.now());
 
@@ -211,6 +218,8 @@ class AdminServiceTest {
                 response.getRoles()
                         .contains("ROLE_ADMIN")
         );
+
+        assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(any(User.class));
     }
@@ -407,5 +416,53 @@ class AdminServiceTest {
                 "El estado del usuario debe ser true o false",
                 exception.getMessage()
         );
+    }
+
+    @Test
+    void shouldMapEmailVerifiedStatus() {
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+        user.setRoles(Set.of(role));
+
+        when(userRepository.findAll())
+                .thenReturn(List.of(user));
+
+        List<UserAdminResponse> result =
+                adminService.getAllUsers();
+
+        assertTrue(
+                result.getFirst().isEmailVerified()
+        );
+    }
+
+    @Test
+    void shouldDisableUserWithoutChangingEmailVerification() {
+
+        User user = new User();
+        user.setId(1L);
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(false);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        UserAdminResponse response =
+                adminService.updateUserStatus(1L, request);
+
+        assertFalse(response.isEnabled());
+        assertTrue(response.isEmailVerified());
+
+        verify(userRepository).save(user);
     }
 }
