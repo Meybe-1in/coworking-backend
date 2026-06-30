@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -153,8 +155,21 @@ public class AdminServiceImpl implements AdminService {
             throw new BadRequestException("El estado del usuario debe ser true o false");
         }
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario autenticado no encontrado")
+                );
+
         if (user.isEnabled() == request.getEnabled()) {
             throw new BadRequestException("El usuario ya tiene ese estado");
+        }
+
+        if(currentUser.getId().equals(user.getId()) && !request.getEnabled()){
+            throw new BadRequestException(
+                    "No puedes desactivar tu propia cuenta"
+            );
         }
 
         user.setEnabled(request.getEnabled());
