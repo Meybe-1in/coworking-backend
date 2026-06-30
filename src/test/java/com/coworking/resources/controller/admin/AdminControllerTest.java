@@ -1,10 +1,7 @@
 package com.coworking.resources.controller.admin;
 
 import com.coworking.admin.controller.AdminController;
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.CreateAdminRequest;
-import com.coworking.admin.dto.UpdateUserStatusRequest;
-import com.coworking.admin.dto.UserAdminResponse;
+import com.coworking.admin.dto.*;
 import com.coworking.admin.service.AdminService;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.payment.enums.PaymentStatus;
@@ -248,6 +245,42 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled")
                         .value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldUpdateUserRole() throws Exception {
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_ADMIN");
+
+        UserAdminResponse response =
+                new UserAdminResponse(
+                        1L,
+                        "dayana",
+                        "dayana@test.com",
+                        Set.of("ROLE_ADMIN"),
+                        true,
+                        true,
+                        LocalDateTime.now()
+                );
+
+        when(adminService.updateUserRole(
+                eq(1L),
+                any(UpdateUserRoleRequest.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                        patch("/admin/users/1/role")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roles[0]")
+                        .value("ROLE_ADMIN"));
     }
 
 }
