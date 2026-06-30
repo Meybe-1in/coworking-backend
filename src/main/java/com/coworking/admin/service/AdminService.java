@@ -28,4 +28,7 @@ public interface AdminService {
 
     // Actualizar estado de usuario
     UserAdminResponse updateUserStatus(Long userId, UpdateUserStatusRequest request);
+
+    // Actualizar rol de usuario
+    UserAdminResponse updateUserRole(Long userId, UpdateUserRoleRequest request);
 }

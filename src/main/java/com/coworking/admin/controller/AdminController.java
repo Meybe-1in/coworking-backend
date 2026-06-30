@@ -113,4 +113,18 @@ public class AdminController {
         );
     }
 
+    //                         Update User Role
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // permite a un administrador actualizar rol de usuario
+    @PatchMapping("/users/{id}/role")
+    @Operation(
+            summary = "Actualizar rol de usuario",
+            description = "Asigna un nuevo rol a un usuario"
+    )
+    public ResponseEntity<UserAdminResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
+        return ResponseEntity.ok(
+                adminService.updateUserRole(id, request)
+        );
+    }
+
 }
