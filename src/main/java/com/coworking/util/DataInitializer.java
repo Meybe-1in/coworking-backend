@@ -10,9 +10,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
-@Profile("dev")
+//@Profile("dev")
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -45,6 +46,8 @@ public class DataInitializer implements CommandLineRunner {
             admin.setEmail("admin@coworking.com");
             admin.setPassword(passwordEncoder.encode("Admin123*"));
             admin.setEnabled(true);
+            admin.setEmailVerified(true);
+            admin.setCreatedAt(LocalDateTime.now());
             admin.setRoles(Set.of(adminRole));
 
             userRepository.save(admin);

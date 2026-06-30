@@ -67,6 +67,7 @@ public class AuthService {
         user.setRoles(Set.of(role));
         user.setEnabled(true);
         user.setEmailVerified(false);
+        user.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(user);
 

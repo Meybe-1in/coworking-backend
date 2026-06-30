@@ -20,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
@@ -30,8 +33,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AdminServiceTest {
@@ -464,5 +466,52 @@ class AdminServiceTest {
         assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(user);
+    }
+
+    //desactivar si es admin
+    @Test
+    void shouldThrowWhenAdminTriesToDisableOwnAccount() {
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setEmail("admin@test.com");
+        admin.setEnabled(true);
+
+        UpdateUserStatusRequest request =
+                new UpdateUserStatusRequest(false);
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepository.findByEmail("admin@test.com"))
+                .thenReturn(Optional.of(admin));
+
+        Authentication authentication =
+                mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn("admin@test.com");
+
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication())
+                .thenReturn(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUserStatus(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "No puedes desactivar tu propia cuenta",
+                exception.getMessage()
+        );
     }
 }

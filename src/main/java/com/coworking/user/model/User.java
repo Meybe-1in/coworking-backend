@@ -44,4 +44,11 @@ public class User {
     private Set<Role> roles = new HashSet<>();
     private LocalDateTime createdAt;
 
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
 }
