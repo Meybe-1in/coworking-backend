@@ -166,7 +166,7 @@ public class AdminServiceImpl implements AdminService {
             throw new BadRequestException("El usuario ya tiene ese estado");
         }
 
-        if(currentUser.getId().equals(user.getId()) && !request.getEnabled()){
+        if (currentUser.getId().equals(user.getId()) && !request.getEnabled()) {
             throw new BadRequestException(
                     "No puedes desactivar tu propia cuenta"
             );
@@ -175,6 +175,71 @@ public class AdminServiceImpl implements AdminService {
         user.setEnabled(request.getEnabled());
         userRepository.save(user);
         return mapToUserAdminResponse(user);
+    }
+
+    @Override
+    public UserAdminResponse updateUserRole(Long userId, UpdateUserRoleRequest request) {
+        // Buscar usuario
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario no encontrado")
+                );
+
+        //validar rol
+        Role newRole = roleRepository.findByName(request.role())
+                .orElseThrow(() ->
+                        new NotFoundException("Rol no encontrado")
+                );
+
+        //obtener rol actual
+        Role currentRole = user.getRoles()
+                .stream()
+                .findFirst()
+                .orElseThrow(() ->
+                        new BadRequestException("Usuario sin rol asignado")
+                );
+
+        //validar que el rol no sea el mismo
+        if (currentRole.getName().equals(newRole.getName())) {
+            throw new BadRequestException("El usuario ya posee ese rol");
+        }
+
+        //Proteger ultimo admin
+        if(currentRole.getName().equals("ROLE_ADMIN")&& newRole.getName().equals("ROLE_USER")){
+            long admins = userRepository.countByRoles_Name("ROLE_ADMIN");
+            if(admins == 1){
+                throw new BadRequestException("No se puede remover el último administrador");
+            }
+        }
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String currentEmail = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Usuario autenticado no encontrado"
+                        )
+                );
+
+        if (
+                currentUser.getId().equals(user.getId())
+                        && currentRole.getName().equals("ROLE_ADMIN")
+                        && newRole.getName().equals("ROLE_USER")
+        ) {
+            throw new BadRequestException(
+                    "No puedes remover tus propios privilegios administrativos"
+            );
+        }
+
+        // El sistema permite un único rol por usuario.
+        user.getRoles().clear();
+        user.getRoles().add(newRole);
+        userRepository.save(user);
+        return mapToUserAdminResponse(user);
+
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa

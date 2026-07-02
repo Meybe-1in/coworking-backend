@@ -1,9 +1,6 @@
 package com.coworking.resources.service.admin;
 
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.CreateAdminRequest;
-import com.coworking.admin.dto.UpdateUserStatusRequest;
-import com.coworking.admin.dto.UserAdminResponse;
+import com.coworking.admin.dto.*;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
@@ -15,6 +12,7 @@ import com.coworking.role.model.Role;
 import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -55,6 +53,31 @@ class AdminServiceTest {
 
     @InjectMocks
     private AdminServiceImpl adminService;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void mockAuthenticatedUser(User user) {
+
+        when(userRepository.findByEmail(user.getEmail()))
+                .thenReturn(Optional.of(user));
+
+        Authentication authentication =
+                mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn(user.getEmail());
+
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication())
+                .thenReturn(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
+    }
 
     @Test
     void shouldReturnAdminStats() {
@@ -326,11 +349,16 @@ class AdminServiceTest {
     @Test
     void shouldEnableUserSuccessfully() {
 
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
         User user = new User();
         user.setId(1L);
         user.setUsername("dayana");
         user.setEmail("dayana@test.com");
         user.setEnabled(false);
+        user.setEmailVerified(true);
+        user.setRoles(Set.of(role));
 
         UpdateUserStatusRequest request =
                 new UpdateUserStatusRequest(true);
@@ -338,10 +366,16 @@ class AdminServiceTest {
         when(userRepository.findById(1L))
                 .thenReturn(Optional.of(user));
 
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+        mockAuthenticatedUser(currentAdmin);
+
         UserAdminResponse response =
                 adminService.updateUserStatus(1L, request);
 
         assertTrue(response.isEnabled());
+        assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(user);
     }
@@ -349,11 +383,16 @@ class AdminServiceTest {
     @Test
     void shouldDisableUserSuccessfully() {
 
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
         User user = new User();
         user.setId(1L);
         user.setUsername("dayana");
         user.setEmail("dayana@test.com");
         user.setEnabled(true);
+        user.setEmailVerified(true);
+        user.setRoles(Set.of(role));
 
         UpdateUserStatusRequest request =
                 new UpdateUserStatusRequest(false);
@@ -361,10 +400,16 @@ class AdminServiceTest {
         when(userRepository.findById(1L))
                 .thenReturn(Optional.of(user));
 
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+        mockAuthenticatedUser(currentAdmin);
+
         UserAdminResponse response =
                 adminService.updateUserStatus(1L, request);
 
         assertFalse(response.isEnabled());
+        assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(user);
     }
@@ -448,16 +493,27 @@ class AdminServiceTest {
     @Test
     void shouldDisableUserWithoutChangingEmailVerification() {
 
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
         User user = new User();
         user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
         user.setEnabled(true);
         user.setEmailVerified(true);
+        user.setRoles(Set.of(role));
 
         UpdateUserStatusRequest request =
                 new UpdateUserStatusRequest(false);
 
         when(userRepository.findById(1L))
                 .thenReturn(Optional.of(user));
+
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+        mockAuthenticatedUser(currentAdmin);
 
         UserAdminResponse response =
                 adminService.updateUserStatus(1L, request);
@@ -511,6 +567,251 @@ class AdminServiceTest {
 
         assertEquals(
                 "No puedes desactivar tu propia cuenta",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldUpdateUserRoleSuccessfully() {
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(Set.of(userRole));
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_ADMIN");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.of(adminRole));
+
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+
+        when(userRepository.findByEmail("admin@test.com"))
+                .thenReturn(Optional.of(currentAdmin));
+
+        Authentication authentication =
+                mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn("admin@test.com");
+
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication())
+                .thenReturn(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
+
+        UserAdminResponse response =
+                adminService.updateUserRole(1L, request);
+
+        assertTrue(
+                response.getRoles().contains("ROLE_ADMIN")
+        );
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowWhenChangingRoleAndUserNotFound() {
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_ADMIN");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.updateUserRole(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "Usuario no encontrado",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldThrowWhenRoleDoesNotExist() {
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setRoles(Set.of(userRole));
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_ADMIN");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.updateUserRole(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "Rol no encontrado",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldThrowWhenUserAlreadyHasRole() {
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setRoles(Set.of(role));
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_USER");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(role));
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUserRole(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "El usuario ya posee ese rol",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldThrowWhenRemovingLastAdmin() {
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setRoles(Set.of(adminRole));
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_USER");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(userRole));
+
+        when(userRepository.countByRoles_Name("ROLE_ADMIN"))
+                .thenReturn(1L);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUserRole(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "No se puede remover el último administrador",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void shouldThrowWhenAdminRemovesOwnPrivileges() {
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setEmail("admin@test.com");
+        admin.setRoles(Set.of(adminRole));
+
+        UpdateUserRoleRequest request =
+                new UpdateUserRoleRequest("ROLE_USER");
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(admin));
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(userRole));
+
+        when(userRepository.countByRoles_Name("ROLE_ADMIN"))
+                .thenReturn(2L);
+
+        when(userRepository.findByEmail("admin@test.com"))
+                .thenReturn(Optional.of(admin));
+
+        Authentication authentication =
+                mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn("admin@test.com");
+
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication())
+                .thenReturn(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUserRole(
+                                1L,
+                                request
+                        )
+                );
+
+        assertEquals(
+                "No puedes remover tus propios privilegios administrativos",
                 exception.getMessage()
         );
     }
