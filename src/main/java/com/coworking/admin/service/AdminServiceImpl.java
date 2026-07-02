@@ -234,7 +234,9 @@ public class AdminServiceImpl implements AdminService {
             );
         }
 
-        user.setRoles(Set.of(newRole));
+        // El sistema permite un único rol por usuario.
+        user.getRoles().clear();
+        user.getRoles().add(newRole);
         userRepository.save(user);
         return mapToUserAdminResponse(user);
 
