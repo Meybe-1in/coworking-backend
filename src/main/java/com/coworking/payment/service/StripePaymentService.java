@@ -40,7 +40,7 @@ public class StripePaymentService implements PaymentService {
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .status(payment.getStatus())
-                .paymentMethod("stripe")
+                .paymentMethod(payment.getPaymentMethod())
                 .paidAt(payment.getPaidAt())
                 .build();
     }
@@ -121,6 +121,7 @@ public class StripePaymentService implements PaymentService {
         payment.setPaidAt(Instant.now());
 
         payment.setStatus(PaymentStatus.SUCCEEDED);
+        payment.setPaymentMethod(paymentIntent.getPaymentMethod());
         paymentRepository.save(payment);
         reservation.setStatus(ReservationStatus.PAID);
         reservationRepository.save(reservation);
