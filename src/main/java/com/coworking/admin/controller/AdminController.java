@@ -127,4 +127,14 @@ public class AdminController {
         );
     }
 
+    //                         Get Profile
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Perfil autenticado
+    @GetMapping("/profile")
+    public ResponseEntity<AdminProfileResponse> getProfile() {
+        return ResponseEntity.ok(
+                adminService.getProfile()
+        );
+    }
+
 }
