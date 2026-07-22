@@ -205,9 +205,9 @@ public class AdminServiceImpl implements AdminService {
         }
 
         //Proteger ultimo admin
-        if(currentRole.getName().equals("ROLE_ADMIN")&& newRole.getName().equals("ROLE_USER")){
+        if (currentRole.getName().equals("ROLE_ADMIN") && newRole.getName().equals("ROLE_USER")) {
             long admins = userRepository.countByRoles_Name("ROLE_ADMIN");
-            if(admins == 1){
+            if (admins == 1) {
                 throw new BadRequestException("No se puede remover el último administrador");
             }
         }
@@ -240,6 +240,29 @@ public class AdminServiceImpl implements AdminService {
         userRepository.save(user);
         return mapToUserAdminResponse(user);
 
+    }
+
+    //Usuario para perfil autenticado
+    @Override
+    public AdminProfileResponse getProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario autenticado no encontrado")
+                );
+
+        return new AdminProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRoles()
+                        .stream()
+                        .map(r -> r.getName())
+                        .collect(Collectors.toSet())
+        );
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa

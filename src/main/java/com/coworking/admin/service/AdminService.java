@@ -31,4 +31,7 @@ public interface AdminService {
 
     // Actualizar rol de usuario
     UserAdminResponse updateUserRole(Long userId, UpdateUserRoleRequest request);
+
+    // Perfil autenticado
+    AdminProfileResponse getProfile();
 }
