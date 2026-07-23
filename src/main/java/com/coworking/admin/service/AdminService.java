@@ -12,13 +12,22 @@ public interface AdminService {
     AdminStatsResponse getStats();
 
     // Reservas
-    List<ReservationResponse> getAllReservations();
+    AdminPageResponse<ReservationResponse> getReservations(
+            int page,
+            int size
+    );
 
     // Pagos
-    List<PaymentResponse> getAllPayments();
+    AdminPageResponse<PaymentResponse> getPayments(
+            int page,
+            int size
+    );
 
     // Usuarios
-    List<UserAdminResponse> getAllUsers();
+    AdminPageResponse<UserAdminResponse> getUsers(
+            int page,
+            int size
+    );
 
     // Administración de reservas
     void cancelReservation(Long reservationId);
