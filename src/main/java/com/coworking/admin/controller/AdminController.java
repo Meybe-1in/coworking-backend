@@ -39,9 +39,12 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Obtiene todas las reservas registradas en el sistema
     @GetMapping("/reservations")
-    public ResponseEntity<List<ReservationResponse>> getReservations() {
+    public ResponseEntity<AdminPageResponse<ReservationResponse>> getReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-                adminService.getAllReservations()
+                adminService.getReservations(page, size)
         );
     }
 
@@ -49,9 +52,12 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Obtiene todos los pagos registrados
     @GetMapping("/payments")
-    public ResponseEntity<List<PaymentResponse>> getPayments() {
+    public ResponseEntity<AdminPageResponse<PaymentResponse>> getPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-                adminService.getAllPayments()
+                adminService.getPayments(page, size)
         );
     }
 
@@ -75,9 +81,12 @@ public class AdminController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Obtiene todos los usuarios registrados para administración
     @GetMapping("/users")
-    public ResponseEntity<List<UserAdminResponse>> getUsers() {
+    public ResponseEntity<AdminPageResponse<UserAdminResponse>> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-                adminService.getAllUsers()
+                adminService.getUsers(page, size)
         );
     }
 

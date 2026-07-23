@@ -18,6 +18,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -149,48 +153,56 @@ class AdminServiceTest {
         user.setRoles(Set.of(role));
         user.setCreatedAt(creationTime);
 
-        when(userRepository.findAll())
-                .thenReturn(List.of(user));
+        Page<User> usersPage =
+                new PageImpl<>(List.of(user));
 
-        // Act
-        List<UserAdminResponse> result =
-                adminService.getAllUsers();
+        when(userRepository.findAll(any(Pageable.class)))
+                .thenReturn(usersPage);
+
+        AdminPageResponse<UserAdminResponse> result =
+                adminService.getUsers(0, 10);
 
         // Assert
-        assertEquals(1, result.size());
+        assertEquals(1, result.content().size());
 
         assertEquals(
                 "dayana",
-                result.getFirst().getUsername()
+                result.content().getFirst().getUsername()
         );
 
         assertEquals(
                 "dayana@gmail.com",
-                result.getFirst().getEmail()
+                result.content().getFirst().getEmail()
         );
 
         assertTrue(
-                result.getFirst()
+                result.content()
+                        .getFirst()
                         .getRoles()
                         .contains("ROLE_USER")
         );
 
         assertTrue(
-                result.getFirst()
+                result.content()
+                        .getFirst()
                         .isEnabled()
         );
 
         assertTrue(
-                result.getFirst()
+                result.content()
+                        .getFirst()
                         .isEmailVerified()
         );
 
         assertEquals(
-                creationTime, result.getFirst()
+                creationTime,
+                result.content()
+                        .getFirst()
                         .getCreatedAt()
         );
 
-        verify(userRepository).findAll();
+        verify(userRepository)
+                .findAll(any(Pageable.class));
     }
 
     //create admin
@@ -479,14 +491,19 @@ class AdminServiceTest {
         user.setEmailVerified(true);
         user.setRoles(Set.of(role));
 
-        when(userRepository.findAll())
-                .thenReturn(List.of(user));
+        Page<User> usersPage =
+                new PageImpl<>(List.of(user));
 
-        List<UserAdminResponse> result =
-                adminService.getAllUsers();
+        when(userRepository.findAll(any(Pageable.class)))
+                .thenReturn(usersPage);
+
+        AdminPageResponse<UserAdminResponse> result =
+                adminService.getUsers(0, 10);
 
         assertTrue(
-                result.getFirst().isEmailVerified()
+                result.content()
+                        .getFirst()
+                        .isEmailVerified()
         );
     }
 
@@ -584,7 +601,10 @@ class AdminServiceTest {
         user.setId(1L);
         user.setUsername("dayana");
         user.setEmail("dayana@test.com");
-        user.setRoles(Set.of(userRole));
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+
+        user.setRoles(roles);
 
         UpdateUserRoleRequest request =
                 new UpdateUserRoleRequest("ROLE_ADMIN");
