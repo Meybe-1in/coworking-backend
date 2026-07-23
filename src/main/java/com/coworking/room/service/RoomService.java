@@ -1,5 +1,6 @@
 package com.coworking.room.service;
 
+import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.exception.RoomHasReservationsException;
 import com.coworking.room.dto.RoomAvailabilityResponse;
 import com.coworking.room.dto.RoomDto;
@@ -10,6 +11,9 @@ import com.coworking.room.repository.RoomRepository;
 import com.coworking.storage.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +34,7 @@ public class RoomService {
     private final StorageService storageService;
     // MAPPERS
 
-    private RoomDto mapToDto(Room room){
+    private RoomDto mapToDto(Room room) {
         RoomDto dto = new RoomDto();
         dto.setId(room.getId());
         dto.setName(room.getName());
@@ -44,7 +48,7 @@ public class RoomService {
         return dto;
     }
 
-    private Room mapToEntity(RoomDto dto){
+    private Room mapToEntity(RoomDto dto) {
         Room room = new Room();
         room.setId(dto.getId());
         room.setName(dto.getName());
@@ -58,7 +62,7 @@ public class RoomService {
         return room;
     }
 
-    private RoomAvailabilityResponse mapToAvailability(Room room, boolean available){
+    private RoomAvailabilityResponse mapToAvailability(Room room, boolean available) {
 
         RoomAvailabilityResponse dto = new RoomAvailabilityResponse();
 
@@ -75,16 +79,31 @@ public class RoomService {
 
     // CRUD ROOMS
 
-    public List<RoomDto> getAllRooms(){
+    public AdminPageResponse<RoomDto> getAllRooms(int page, int size) {
 
-        return roomRepository
-                .findAll(Sort.by(Sort.Direction.ASC,"capacity"))
-                .stream()
-                .map(this::mapToDto)
-                .toList();
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "capacity")
+        );
+
+        Page<RoomDto> rooms =
+                roomRepository
+                        .findAll(pageable)
+                        .map(this::mapToDto);
+
+        return AdminPageResponse.<RoomDto>builder()
+                .content(rooms.getContent())
+                .page(rooms.getNumber())
+                .size(rooms.getSize())
+                .totalElements(rooms.getTotalElements())
+                .totalPages(rooms.getTotalPages())
+                .first(rooms.isFirst())
+                .last(rooms.isLast())
+                .build();
     }
 
-    public Optional<RoomDto> getRoomById(Long id){
+    public Optional<RoomDto> getRoomById(Long id) {
 
         return roomRepository
                 .findById(id)
@@ -92,11 +111,11 @@ public class RoomService {
     }
 
     @Transactional
-    public RoomDto createRoom(RoomDto dto, MultipartFile image){
+    public RoomDto createRoom(RoomDto dto, MultipartFile image) {
 
         Room room = mapToEntity(dto);
 
-        if(image != null && !image.isEmpty()){
+        if (image != null && !image.isEmpty()) {
             String imageUrl = storageService.upload(image);
             room.setImageUrl(imageUrl);
         }
@@ -104,7 +123,7 @@ public class RoomService {
         return mapToDto(roomRepository.save(room));
     }
 
-    public Optional<RoomDto> updateRoom(Long id, RoomDto dto, MultipartFile image){
+    public Optional<RoomDto> updateRoom(Long id, RoomDto dto, MultipartFile image) {
 
         return roomRepository.findById(id).map(room -> {
 
@@ -126,9 +145,9 @@ public class RoomService {
     }
 
     @Transactional
-    public boolean deleteRoom(Long id){
+    public boolean deleteRoom(Long id) {
 
-        if(!roomRepository.existsById(id)) {
+        if (!roomRepository.existsById(id)) {
             return false;
         }
 
@@ -146,16 +165,16 @@ public class RoomService {
 
     public List<RoomAvailabilityResponse> getRoomsAvailability(
             Instant start,
-           Instant end,
+            Instant end,
             Integer people
-    ){
+    ) {
 
         List<Room> rooms =
                 roomRepository.findByCapacityOrderByCapacityAsc(people);
 
         List<Reservation> overlapping =
                 reservationRepository
-                        .findByStartAtLessThanAndEndAtGreaterThan(end,start);
+                        .findByStartAtLessThanAndEndAtGreaterThan(end, start);
 
         Set<Long> busyRoomIds =
                 overlapping.stream()
