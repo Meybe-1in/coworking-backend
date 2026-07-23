@@ -39,6 +39,14 @@ class DataSourceContainerTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.jpa.properties.hibernate.dialect",
                 () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("jwt.secret",
+                () -> "test-secret-key-test-secret-key-test-secret-key");
+
+        registry.add("jwt.expiration.short",
+                () -> "3600000");
+
+        registry.add("jwt.expiration.long",
+                () -> "604800000");
     }
 
     @Autowired

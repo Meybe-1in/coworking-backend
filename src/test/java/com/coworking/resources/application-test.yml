@@ -1,5 +1,26 @@
 spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
   jpa:
     hibernate:
-      ddl-auto: create-drop   # DB limpia para cada suite de tests
-    show-sql: true
+      ddl-auto: create-drop
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+
+jwt:
+  secret: test-secret-key-test-secret-key-test-secret-key
+  expiration:
+    short: 3600000
+    long: 604800000
+
+stripe:
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  currency: ${STRIPE_CURRENCY:usd}

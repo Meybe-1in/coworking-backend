@@ -46,8 +46,8 @@ public class CalendarControllerTest {
                 .thenReturn(List.of(new CalendarEventResponse()));
 
         mockMvc.perform(get("/api/reservations/calendar")
-                        .param("from", "2025-10-01T00:00:00")
-                        .param("to", "2025-10-31T23:59:59"))
+                        .param("from", "2025-10-01T00:00:00Z")
+                        .param("to", "2025-10-31T23:59:59Z"))
                 .andExpect(status().isOk());
     }
 

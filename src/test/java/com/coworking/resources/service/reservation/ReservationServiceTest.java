@@ -250,6 +250,7 @@ class ReservationServiceTest {
         Reservation reservation = new Reservation();
         reservation.setId(1L);
         reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setCreatedAt(Instant.now());
 
         when(reservationRepository.findById(1L))
                 .thenReturn(Optional.of(reservation));
