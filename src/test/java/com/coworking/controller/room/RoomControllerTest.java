@@ -1,5 +1,6 @@
 package com.coworking.controller.room;
 
+import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.room.controller.RoomController;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.security.JwtUtil;
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,6 +54,7 @@ class RoomControllerTest {
                 )
                 .andExpect(status().isOk());
     }
+
     //FECHA INVALIDA
     @Test
     void getAvailability_fechaInvalida_retorna400() throws Exception {
@@ -82,10 +83,25 @@ class RoomControllerTest {
     @Test
     void getAllRooms_debeRetornar200() throws Exception {
 
-        when(roomService.getAllRooms())
-                .thenReturn(List.of(new RoomDto()));
+        AdminPageResponse<RoomDto> response =
+                AdminPageResponse.<RoomDto>builder()
+                        .content(List.of(new RoomDto()))
+                        .page(0)
+                        .size(10)
+                        .totalElements(1)
+                        .totalPages(1)
+                        .first(true)
+                        .last(true)
+                        .build();
 
-        mockMvc.perform(get("/api/rooms"))
+        when(roomService.getAllRooms(0, 10))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        get("/api/rooms")
+                                .param("page", "0")
+                                .param("size", "10")
+                )
                 .andExpect(status().isOk());
     }
 

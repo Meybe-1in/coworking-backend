@@ -1,5 +1,6 @@
 package com.coworking.room.controller;
 
+import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.room.dto.RoomAvailabilityResponse;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.service.RoomService;
@@ -26,8 +27,13 @@ public class RoomController {
     // listar
     @GetMapping
     @Operation(summary = "Listar todas las salas")
-    public List<RoomDto> getAllRoom(){
-        return roomService.getAllRooms();
+    public ResponseEntity<AdminPageResponse<RoomDto>> getAllRoom(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return ResponseEntity.ok(
+                roomService.getAllRooms(page, size)
+        );
     }
 
     //buscar por id

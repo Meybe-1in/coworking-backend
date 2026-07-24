@@ -89,7 +89,7 @@ class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void shouldReturnAllReservations() throws Exception {
+    void shouldReturnPagedReservations() throws Exception {
 
         ReservationResponse reservation = new ReservationResponse();
 
@@ -98,18 +98,33 @@ class AdminControllerTest {
         reservation.setUsername("dayana");
         reservation.setStatus(ReservationStatus.PAID);
 
-        when(adminService.getAllReservations())
-                .thenReturn(List.of(reservation));
+        AdminPageResponse<ReservationResponse> response =
+                AdminPageResponse.<ReservationResponse>builder()
+                        .content(List.of(reservation))
+                        .page(0)
+                        .size(10)
+                        .totalElements(1)
+                        .totalPages(1)
+                        .first(true)
+                        .last(true)
+                        .build();
 
-        mockMvc.perform(get("/admin/reservations"))
+        when(adminService.getReservations(0, 10))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        get("/admin/reservations")
+                                .param("page", "0")
+                                .param("size", "10")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].roomName")
+                .andExpect(jsonPath("$.content[0].roomName")
                         .value("Sala Privada"));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void shouldReturnAllPayments() throws Exception {
+    void shouldReturnPagedPayments() throws Exception {
 
         PaymentResponse payment = PaymentResponse.builder()
                 .id(1L)
@@ -121,12 +136,27 @@ class AdminControllerTest {
                 .paidAt(Instant.now())
                 .build();
 
-        when(adminService.getAllPayments())
-                .thenReturn(List.of(payment));
+        AdminPageResponse<PaymentResponse> response =
+                AdminPageResponse.<PaymentResponse>builder()
+                        .content(List.of(payment))
+                        .page(0)
+                        .size(10)
+                        .totalElements(1)
+                        .totalPages(1)
+                        .first(true)
+                        .last(true)
+                        .build();
 
-        mockMvc.perform(get("/admin/payments"))
+        when(adminService.getPayments(0, 10))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        get("/admin/payments")
+                                .param("page", "0")
+                                .param("size", "10")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].roomName")
+                .andExpect(jsonPath("$.content[0].roomName")
                         .value("Sala Premium"));
     }
 
@@ -149,7 +179,8 @@ class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void shouldReturnAllUsers() throws Exception {
+    void shouldReturnPagedUsers() throws Exception {
+
         UserAdminResponse user =
                 new UserAdminResponse(
                         1L,
@@ -161,14 +192,29 @@ class AdminControllerTest {
                         LocalDateTime.now()
                 );
 
-        when(adminService.getAllUsers())
-                .thenReturn(List.of(user));
+        AdminPageResponse<UserAdminResponse> response =
+                AdminPageResponse.<UserAdminResponse>builder()
+                        .content(List.of(user))
+                        .page(0)
+                        .size(10)
+                        .totalElements(1)
+                        .totalPages(1)
+                        .first(true)
+                        .last(true)
+                        .build();
 
-        mockMvc.perform(get("/admin/users"))
+        when(adminService.getUsers(0, 10))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        get("/admin/users")
+                                .param("page", "0")
+                                .param("size", "10")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].username")
+                .andExpect(jsonPath("$.content[0].username")
                         .value("dayana"))
-                .andExpect(jsonPath("$[0].email")
+                .andExpect(jsonPath("$.content[0].email")
                         .value("dayana@gmail.com"));
     }
 

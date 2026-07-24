@@ -1,5 +1,6 @@
 package com.coworking.service.room;
 
+import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -75,12 +79,25 @@ class RoomServiceTest {
 
     @Test
     void getAllRooms_returnsList() {
-        when(roomRepository.findAll(any(Sort.class))).thenReturn(List.of(room));
 
-        List<RoomDto> rooms = roomService.getAllRooms();
+        Page<Room> roomsPage =
+                new PageImpl<>(List.of(room));
 
-        assertEquals(1, rooms.size());
-        assertEquals("Sala 1", rooms.getFirst().getName());
+        when(roomRepository.findAll(any(Pageable.class)))
+                .thenReturn(roomsPage);
+
+        AdminPageResponse<RoomDto> result =
+                roomService.getAllRooms(0, 10);
+
+        assertEquals(
+                1,
+                result.content().size()
+        );
+
+        assertEquals(
+                "Sala 1",
+                result.content().getFirst().getName()
+        );
     }
 
     @Test
@@ -176,7 +193,7 @@ class RoomServiceTest {
         assertFalse(deleted);
         verify(roomRepository, never()).deleteById(anyLong());
     }
-    
+
     @Test
     void getAllRooms_debeRetornarOrdenAscendentePorCapacidad() {
 
@@ -186,13 +203,24 @@ class RoomServiceTest {
         Room r2 = new Room();
         r2.setCapacity(4);
 
-        when(roomRepository.findAll(any(Sort.class)))
-                .thenReturn(List.of(r2, r1));
+        Page<Room> roomsPage =
+                new PageImpl<>(List.of(r2, r1));
 
-        List<RoomDto> result = roomService.getAllRooms();
+        when(roomRepository.findAll(any(Pageable.class)))
+                .thenReturn(roomsPage);
 
-        assertEquals(4, result.get(0).getCapacity());
-        assertEquals(6, result.get(1).getCapacity());
+        AdminPageResponse<RoomDto> result =
+                roomService.getAllRooms(0, 10);
+
+        assertEquals(
+                4,
+                result.content().get(0).getCapacity()
+        );
+
+        assertEquals(
+                6,
+                result.content().get(1).getCapacity()
+        );
     }
 
     @Test
@@ -245,6 +273,7 @@ class RoomServiceTest {
         verify(storageService).upload(image);
         verify(roomRepository).save(any(Room.class));
     }
+
     //update
     @Test
     void updateRoom_updatesExistingRoom_withoutImage() {

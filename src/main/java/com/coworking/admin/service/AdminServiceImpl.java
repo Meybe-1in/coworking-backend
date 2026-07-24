@@ -15,6 +15,8 @@ import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,22 +70,50 @@ public class AdminServiceImpl implements AdminService {
 
     // Obtiene todas las reservas y las transforma a DTO de respuesta
     @Override
-    public List<ReservationResponse> getAllReservations() {
+    public AdminPageResponse<ReservationResponse> getReservations(int page, int size) {
 
-        return reservationRepository.findAll()
-                .stream()
-                .map(this::mapReservationToResponse)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<ReservationResponse> reservations =
+                reservationRepository
+                        .findAll(pageable)
+                        .map(this::mapReservationToResponse);
+
+        return AdminPageResponse.<ReservationResponse>builder()
+                .content(reservations.getContent())
+                .page(reservations.getNumber())
+                .size(reservations.getSize())
+                .totalElements(reservations.getTotalElements())
+                .totalPages(reservations.getTotalPages())
+                .first(reservations.isFirst())
+                .last(reservations.isLast())
+                .build();
     }
 
     // Obtiene todos los pagos y los transforma a DTO de respuesta
     @Override
-    public List<PaymentResponse> getAllPayments() {
+    public AdminPageResponse<PaymentResponse> getPayments(int page, int size) {
 
-        return paymentRepository.findAll()
-                .stream()
-                .map(this::mapPaymentToResponse)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "paidAt")
+        );
+
+        Page<PaymentResponse> payments =
+                paymentRepository
+                        .findAll(pageable)
+                        .map(this::mapPaymentToResponse);
+
+        return AdminPageResponse.<PaymentResponse>builder()
+                .content(payments.getContent())
+                .page(payments.getNumber())
+                .size(payments.getSize())
+                .totalElements(payments.getTotalElements())
+                .totalPages(payments.getTotalPages())
+                .first(payments.isFirst())
+                .last(payments.isLast())
+                .build();
     }
 
     // Cancela una reserva independientemente de su propietario
@@ -266,11 +296,27 @@ public class AdminServiceImpl implements AdminService {
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa
-    public List<UserAdminResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::mapToUserAdminResponse)
-                .toList();
+    @Override
+    public AdminPageResponse<UserAdminResponse> getUsers(int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<UserAdminResponse> users =
+                userRepository
+                        .findAll(pageable)
+                        .map(this::mapToUserAdminResponse);
+
+        return AdminPageResponse.<UserAdminResponse>builder()
+                .content(users.getContent())
+                .page(users.getNumber())
+                .size(users.getSize())
+                .totalElements(users.getTotalElements())
+                .totalPages(users.getTotalPages())
+                .first(users.isFirst())
+                .last(users.isLast())
+                .build();
     }
 
     // MAPPERS
