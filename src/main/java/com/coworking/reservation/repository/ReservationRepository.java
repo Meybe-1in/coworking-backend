@@ -70,4 +70,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     //admin metricts
 
     long countByStatus( ReservationStatus status);
+
+    long countByCreatedAtBetween(Instant start, Instant end);
 }
