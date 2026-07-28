@@ -10,6 +10,7 @@ import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.role.model.Role;
 import com.coworking.role.repository.RoleRepository;
+import com.coworking.room.repository.RoomRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +46,9 @@ class AdminServiceTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private RoomRepository roomRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -83,7 +90,9 @@ class AdminServiceTest {
     @Test
     void shouldReturnAdminStats() {
 
-        when(reservationRepository.count()).thenReturn(10L);
+        // Arrange
+        when(reservationRepository.count())
+                .thenReturn(10L);
 
         when(reservationRepository.countByStatus(ReservationStatus.PAID))
                 .thenReturn(5L);
@@ -97,17 +106,85 @@ class AdminServiceTest {
         when(reservationRepository.countByStatus(ReservationStatus.EXPIRED))
                 .thenReturn(2L);
 
+        when(userRepository.count())
+                .thenReturn(25L);
+
+        when(userRepository.countByEnabledTrue())
+                .thenReturn(20L);
+
+        when(userRepository.countByEnabledFalse())
+                .thenReturn(5L);
+
+        when(roomRepository.count())
+                .thenReturn(8L);
+
+        when(roomRepository.countByAvailableTrue())
+                .thenReturn(6L);
+
+        when(roomRepository.countByAvailableFalse())
+                .thenReturn(2L);
+
+        when(reservationRepository.countByCreatedAtBetween(any(), any()))
+                .thenReturn(4L)
+                .thenReturn(18L);
+
         when(paymentRepository.getTotalRevenue())
                 .thenReturn(BigDecimal.valueOf(1000));
 
         when(paymentRepository.getMonthlyRevenue())
                 .thenReturn(BigDecimal.valueOf(300));
 
+        // Act
         AdminStatsResponse response = adminService.getStats();
 
+        // Assert
         assertEquals(10L, response.totalReservations());
         assertEquals(5L, response.activeReservations());
-        assertEquals(BigDecimal.valueOf(1000), response.totalRevenue());
+        assertEquals(2L, response.pendingReservations());
+        assertEquals(1L, response.cancelledReservations());
+        assertEquals(2L, response.expiredReservations());
+
+        assertEquals(25L, response.totalUsers());
+        assertEquals(20L, response.activeUsers());
+        assertEquals(5L, response.disabledUsers());
+
+        assertEquals(8L, response.totalRooms());
+        assertEquals(6L, response.availableRooms());
+        assertEquals(2L, response.unavailableRooms());
+
+        assertEquals(4L, response.todayReservations());
+        assertEquals(18L, response.monthReservations());
+
+        assertEquals(
+                BigDecimal.valueOf(1000),
+                response.totalRevenue()
+        );
+
+        assertEquals(
+                BigDecimal.valueOf(300),
+                response.monthlyRevenue()
+        );
+
+        verify(reservationRepository).count();
+
+        verify(reservationRepository).countByStatus(ReservationStatus.PAID);
+        verify(reservationRepository).countByStatus(ReservationStatus.PENDING);
+        verify(reservationRepository).countByStatus(ReservationStatus.CANCELLED);
+        verify(reservationRepository).countByStatus(ReservationStatus.EXPIRED);
+
+        verify(userRepository).count();
+        verify(userRepository).countByEnabledTrue();
+        verify(userRepository).countByEnabledFalse();
+
+        verify(roomRepository).count();
+        verify(roomRepository).countByAvailableTrue();
+        verify(roomRepository).countByAvailableFalse();
+
+        verify(reservationRepository, times(2))
+                .countByCreatedAtBetween(any(), any());
+
+        verify(paymentRepository).getTotalRevenue();
+        verify(paymentRepository).getMonthlyRevenue();
     }
 
     // Cancel reservation
@@ -150,48 +227,44 @@ class AdminServiceTest {
         user.setRoles(Set.of(role));
         user.setCreatedAt(creationTime);
 
-        when(userRepository.findAll())
-                .thenReturn(List.of(user));
+        Page<User> page =
+                new PageImpl<>(List.of(user));
+
+        when(userRepository.findAll(any(Pageable.class)))
+                .thenReturn(page);
 
         // Act
-        List<UserAdminResponse> result =
-                adminService.getAllUsers();
+        AdminPageResponse<UserAdminResponse> response =
+                adminService.getUsers(0, 10);
 
         // Assert
-        assertEquals(1, result.size());
+        assertEquals(1, response.content().size());
 
-        assertEquals(
-                "dayana",
-                result.getFirst().getUsername()
-        );
+        UserAdminResponse result =
+                response.content().getFirst();
+
+        assertEquals("dayana", result.getUsername());
 
         assertEquals(
                 "dayana@gmail.com",
-                result.getFirst().getEmail()
+                result.getEmail()
         );
 
         assertTrue(
-                result.getFirst()
-                        .getRoles()
-                        .contains("ROLE_USER")
+                result.getRoles().contains("ROLE_USER")
         );
 
-        assertTrue(
-                result.getFirst()
-                        .isEnabled()
-        );
+        assertTrue(result.isEnabled());
 
-        assertTrue(
-                result.getFirst()
-                        .isEmailVerified()
-        );
+        assertTrue(result.isEmailVerified());
 
         assertEquals(
-                creationTime, result.getFirst()
-                        .getCreatedAt()
+                creationTime,
+                result.getCreatedAt()
         );
 
-        verify(userRepository).findAll();
+        verify(userRepository)
+                .findAll(any(Pageable.class));
     }
 
     //create admin
@@ -463,31 +536,6 @@ class AdminServiceTest {
         assertEquals(
                 "El estado del usuario debe ser true o false",
                 exception.getMessage()
-        );
-    }
-
-    @Test
-    void shouldMapEmailVerifiedStatus() {
-
-        Role role = new Role();
-        role.setName("ROLE_USER");
-
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("dayana");
-        user.setEmail("dayana@test.com");
-        user.setEnabled(true);
-        user.setEmailVerified(true);
-        user.setRoles(Set.of(role));
-
-        when(userRepository.findAll())
-                .thenReturn(List.of(user));
-
-        List<UserAdminResponse> result =
-                adminService.getAllUsers();
-
-        assertTrue(
-                result.getFirst().isEmailVerified()
         );
     }
 
