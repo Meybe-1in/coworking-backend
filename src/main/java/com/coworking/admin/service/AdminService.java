@@ -1,6 +1,7 @@
 package com.coworking.admin.service;
 
 import com.coworking.admin.dto.*;
+import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.reservation.dto.ReservationResponse;
 
@@ -43,4 +44,9 @@ public interface AdminService {
 
     // Perfil autenticado
     AdminProfileResponse getProfile();
+
+    // Chart
+    List<ChartPointResponse> getReservationsChart(
+            ChartPeriod period
+    );
 }

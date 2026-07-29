@@ -2,6 +2,7 @@ package com.coworking.admin.controller;
 
 
 import com.coworking.admin.dto.*;
+import com.coworking.admin.service.AdminDashboardService;
 import com.coworking.admin.service.AdminService;
 import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
@@ -24,6 +25,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AdminDashboardService dashboardService;
 
     //                      Dashboard stats
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -31,7 +33,7 @@ public class AdminController {
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getStats() {
         return ResponseEntity.ok(
-                adminService.getStats()
+                dashboardService.getStats()
         );
     }
 

@@ -1,6 +1,8 @@
 package com.coworking.admin.service;
 
 import com.coworking.admin.dto.*;
+import com.coworking.admin.enums.ChartPeriod;
+import com.coworking.admin.util.ChartDateUtils;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.dto.PaymentResponse;
@@ -69,22 +71,20 @@ public class AdminServiceImpl implements AdminService {
         long availableRooms = roomRepository.countByAvailableTrue();
         long unavailableRooms = roomRepository.countByAvailableFalse();
 
+
         Instant now = Instant.now();
-        LocalDate today = LocalDate.now();
-        Instant startToday = today
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
-        Instant endToday = today
-                .plusDays(1)
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
+        Instant endToday = ChartDateUtils.getEndDate();
+
+        Instant startToday =
+                LocalDate.now()
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant();
+
+        Instant startMonth =
+                ChartDateUtils.getStartDate(ChartPeriod.MONTH);
 
         long todayReservations = reservationRepository.countByCreatedAtBetween(startToday, endToday);
 
-        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
-        Instant startMonth = firstDayOfMonth
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
         long monthReservations = reservationRepository.countByCreatedAtBetween(startMonth, endToday);
 
         // Construye las métricas mostradas en el dashboard administrativo
@@ -336,6 +336,11 @@ public class AdminServiceImpl implements AdminService {
                         .map(r -> r.getName())
                         .collect(Collectors.toSet())
         );
+    }
+
+    @Override
+    public List<ChartPointResponse> getReservationsChart(ChartPeriod period) {
+        return List.of();
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa
