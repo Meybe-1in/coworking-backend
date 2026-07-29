@@ -71,10 +71,7 @@ public class AdminServiceImpl implements AdminService {
         long availableRooms = roomRepository.countByAvailableTrue();
         long unavailableRooms = roomRepository.countByAvailableFalse();
 
-
-        Instant now = Instant.now();
         Instant endToday = ChartDateUtils.getEndDate();
-
         Instant startToday =
                 LocalDate.now()
                         .atStartOfDay(ZoneId.systemDefault())
@@ -84,7 +81,6 @@ public class AdminServiceImpl implements AdminService {
                 ChartDateUtils.getStartDate(ChartPeriod.MONTH);
 
         long todayReservations = reservationRepository.countByCreatedAtBetween(startToday, endToday);
-
         long monthReservations = reservationRepository.countByCreatedAtBetween(startMonth, endToday);
 
         // Construye las métricas mostradas en el dashboard administrativo
