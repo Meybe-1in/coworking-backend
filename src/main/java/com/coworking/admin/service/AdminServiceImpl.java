@@ -30,7 +30,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -335,8 +337,36 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<ChartPointResponse> getReservationsChart(ChartPeriod period) {
-        return List.of();
+    public List<ChartPointResponse> getReservationsChart(
+            ChartPeriod period
+    ) {
+        Instant startDate = ChartDateUtils.getStartDate(period);
+
+        Instant endDate = ChartDateUtils.getEndDate();
+
+        List<Reservation> reservations = reservationRepository
+                .findByCreatedAtBetweenOrderByCreatedAtAsc(startDate, endDate);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        Map<String, Long> groupedReservations =
+                reservations.stream().collect(
+                        Collectors.groupingBy(reservation -> reservation.getCreatedAt()
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                        .format(formatter),
+                                Collectors.counting()
+                        )
+                );
+
+        return groupedReservations.entrySet()
+                .stream()
+                .map(entry -> ChartPointResponse
+                        .builder()
+                        .label(entry.getKey())
+                        .value(entry.getValue())
+                        .build()
+                ).toList();
     }
 
     // Obtiene todos los usuarios registrados para la vista administrativa
