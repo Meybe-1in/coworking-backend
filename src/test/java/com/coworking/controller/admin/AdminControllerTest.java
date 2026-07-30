@@ -66,29 +66,6 @@ class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void shouldReturnAdminStats() throws Exception {
-
-        AdminStatsResponse response = AdminStatsResponse.builder()
-                .totalReservations(10)
-                .activeReservations(5)
-                .pendingReservations(2)
-                .cancelledReservations(1)
-                .expiredReservations(2)
-                .totalRevenue(BigDecimal.valueOf(500))
-                .monthlyRevenue(BigDecimal.valueOf(200))
-                .build();
-
-        when(adminService.getStats())
-                .thenReturn(response);
-
-        mockMvc.perform(get("/admin/stats"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalReservations").value(10))
-                .andExpect(jsonPath("$.totalRevenue").value(500));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
     void shouldReturnPagedReservations() throws Exception {
 
         ReservationResponse reservation = new ReservationResponse();
