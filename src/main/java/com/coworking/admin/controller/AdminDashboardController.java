@@ -40,4 +40,14 @@ public class AdminDashboardController {
         );
     }
 
+    @GetMapping("/dashboard/reservations/monthly")
+    public ResponseEntity<List<ChartPointResponse>> getMonthlyReservations() {
+
+        return ResponseEntity.ok(
+                dashboardService.getReservationsChart(
+                        ChartPeriod.YEAR
+                )
+        );
+    }
+
 }
