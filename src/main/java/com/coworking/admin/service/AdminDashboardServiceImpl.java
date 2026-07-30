@@ -192,5 +192,13 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
         return List.of();
 
+        Instant end =
+                ChartDateUtils.getEndDate();
+
+        return reservationRepository
+                .findByCreatedAtBetweenOrderByCreatedAtAsc(
+                        start,
+                        end
+                );
     }
 }
