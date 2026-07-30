@@ -4,7 +4,6 @@ import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.util.ChartDateUtils;
-import com.coworking.exception.BadRequestException;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
@@ -16,10 +15,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -106,9 +111,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
          */
 
         return switch (period) {
-            case WEEK, MONTH -> groupByDay(reservations);
-            case YEAR -> groupByMonth(reservations);
-            default -> throw new BadRequestException("Periodo no soportado");
+            case WEEK, MONTH -> groupByDay(getReservations(period));
+            case YEAR -> groupByMonth();
         };
 
     }
@@ -190,7 +194,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             ChartPeriod period
     ) {
 
-        return List.of();
+        Instant start =
+                ChartDateUtils.getStartDate(period);
 
         Instant end =
                 ChartDateUtils.getEndDate();
