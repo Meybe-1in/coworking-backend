@@ -196,16 +196,16 @@ public class AdminDashboardServiceTest {
         assertEquals(2, result.size());
 
         assertEquals("2026-07-20",
-                result.get(0).getLabel());
+                result.get(0).getPeriod());
 
         assertEquals(2L,
-                result.get(0).getValue());
+                result.get(0).getTotal());
 
         assertEquals("2026-07-21",
-                result.get(1).getLabel());
+                result.get(1).getPeriod());
 
         assertEquals(1L,
-                result.get(1).getValue());
+                result.get(1).getTotal());
 
         verify(reservationRepository)
                 .findByCreatedAtBetweenOrderByCreatedAtAsc(

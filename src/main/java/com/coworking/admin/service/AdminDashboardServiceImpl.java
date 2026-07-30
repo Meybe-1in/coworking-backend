@@ -4,6 +4,7 @@ import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.util.ChartDateUtils;
+import com.coworking.exception.BadRequestException;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
@@ -95,32 +96,38 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     public List<ChartPointResponse> getReservationsChart(
             ChartPeriod period
     ) {
-        Instant startDate = ChartDateUtils.getStartDate(period);
 
-        Instant endDate = ChartDateUtils.getEndDate();
+        Instant start = ChartDateUtils.getStartDate(period);
+
+        Instant end = ChartDateUtils.getEndDate();
 
         List<Reservation> reservations = reservationRepository
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(startDate, endDate);
+                .findByCreatedAtBetweenOrderByCreatedAtAsc(start, end);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return mapReservations(reservations, period);
+    }
 
-        Map<String, Long> groupedReservations =
-                reservations.stream().collect(
-                        Collectors.groupingBy(reservation -> reservation.getCreatedAt()
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                        .format(formatter),
-                                Collectors.counting()
-                        )
-                );
+    private List<ChartPointResponse> mapReservations(
+            List<Reservation> reservations,
+            ChartPeriod period
+    ) {
+        return switch (period) {
+            case WEEK, MONTH -> groupByDay(reservations);
+            case YEAR -> groupByMonth(reservations);
+            default -> throw new BadRequestException("Periodo no soportado");
+        };
 
-        return groupedReservations.entrySet()
-                .stream()
-                .map(entry -> ChartPointResponse
-                        .builder()
-                        .label(entry.getKey())
-                        .value(entry.getValue())
-                        .build()
-                ).toList();
+    }
+
+    private List<ChartPointResponse> groupByDay(List<Reservation> reservations) {
+
+        return List.of();
+
+    }
+
+    private List<ChartPointResponse> groupByMonth(List<Reservation> reservations) {
+
+        return List.of();
+
     }
 }

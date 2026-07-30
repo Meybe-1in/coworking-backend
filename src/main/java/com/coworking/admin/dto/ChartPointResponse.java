@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChartPointResponse {
 
-    private String label;
+    private String period;
 
-    private Long value;
+    private Long total;
 }
