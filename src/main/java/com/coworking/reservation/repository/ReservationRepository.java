@@ -74,4 +74,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     long countByCreatedAtBetween(Instant start, Instant end);
 
     List<Reservation> findByCreatedAtBetweenOrderByCreatedAtAsc(Instant start, Instant end);
+
+    @Query("""
+       SELECT
+           MONTH(r.createdAt),
+           COUNT(r)
+       FROM Reservation r
+       WHERE YEAR(r.createdAt)=YEAR(CURRENT_DATE)
+       GROUP BY MONTH(r.createdAt)
+       ORDER BY MONTH(r.createdAt)
+       """)
+    List<Object[]> countReservationsByMonthCurrentYear();
+
+
 }
