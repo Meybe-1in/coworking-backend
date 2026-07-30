@@ -105,13 +105,6 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
          * de datos para evitar cargar todas las reservas en memoria.
          */
 
-        return mapReservations(reservations, period);
-    }
-
-    private List<ChartPointResponse> mapReservations(
-            List<Reservation> reservations,
-            ChartPeriod period
-    ) {
         return switch (period) {
             case WEEK, MONTH -> groupByDay(reservations);
             case YEAR -> groupByMonth(reservations);
