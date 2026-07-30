@@ -54,6 +54,7 @@ public class AdminDashboardServiceTest {
     @InjectMocks
     private AdminDashboardServiceImpl adminDashboardService;
 
+    // Estadísticas del dashboard
     @Test
     void shouldReturnAdminStats() {
 
@@ -154,9 +155,9 @@ public class AdminDashboardServiceTest {
         verify(paymentRepository).getMonthlyRevenue();
     }
 
-
+    // Agrupación diaria para WEEK/MONTH
     @Test
-    void shouldReturnReservationsGroupedByDay() {
+    void shouldGroupReservationsByDayForShortPeriods() {
 
         Reservation firstReservation = new Reservation();
         firstReservation.setCreatedAt(
@@ -195,70 +196,83 @@ public class AdminDashboardServiceTest {
 
         assertEquals(2, result.size());
 
-        assertEquals("2026-07-20",
-                result.get(0).getPeriod());
+        assertEquals("2026-07-20", result.get(0).getPeriod());
+        assertEquals(2L, result.get(0).getTotal());
 
-        assertEquals(2L,
-                result.get(0).getTotal());
-
-        assertEquals("2026-07-21",
-                result.get(1).getPeriod());
-
-        assertEquals(1L,
-                result.get(1).getTotal());
+        assertEquals("2026-07-21", result.get(1).getPeriod());
+        assertEquals(1L, result.get(1).getTotal());
 
         verify(reservationRepository)
                 .findByCreatedAtBetweenOrderByCreatedAtAsc(
                         any(),
                         any()
                 );
+
+        verify(reservationRepository, never())
+                .countReservationsByMonthCurrentYear();
     }
 
+    //Incluir meses sin reservas con valor 0.
     @Test
-    void shouldReturnEmptyChartWhenThereAreNoReservations() {
+    void shouldReturnTwelveMonthsForYearChartIncludingEmptyMonths() {
 
-        when(reservationRepository
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(any(), any()))
+        when(reservationRepository.countReservationsByMonthCurrentYear())
                 .thenReturn(List.of());
-
-        List<ChartPointResponse> result =
-                adminDashboardService.getReservationsChart(
-                        ChartPeriod.MONTH
-                );
-
-        assertTrue(result.isEmpty());
-
-        verify(reservationRepository)
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(
-                        any(),
-                        any()
-                );
-    }
-
-    @Test
-    void shouldReturnChartForYearPeriod() {
-
-        Reservation reservation = new Reservation();
-
-        reservation.setCreatedAt(
-                Instant.now()
-        );
-
-        when(reservationRepository
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(any(), any()))
-                .thenReturn(List.of(reservation));
 
         List<ChartPointResponse> result =
                 adminDashboardService.getReservationsChart(
                         ChartPeriod.YEAR
                 );
 
-        assertEquals(1, result.size());
+        assertEquals(12, result.size());
+
+        assertEquals("Enero", result.get(0).getPeriod());
+        assertEquals(0L, result.get(0).getTotal());
+
+        assertEquals("Diciembre", result.get(11).getPeriod());
+        assertEquals(0L, result.get(11).getTotal());
 
         verify(reservationRepository)
+                .countReservationsByMonthCurrentYear();
+
+        verify(reservationRepository, never())
                 .findByCreatedAtBetweenOrderByCreatedAtAsc(
                         any(),
                         any()
                 );
+    }
+
+    //Agrupar correctamente por mes
+    @Test
+    void shouldReturnMonthlyTotalsFromRepository() {
+
+        when(reservationRepository.countReservationsByMonthCurrentYear())
+                .thenReturn(List.of(
+                        new Object[]{1, 5L},
+                        new Object[]{2, 8L},
+                        new Object[]{7, 3L}
+                ));
+
+        List<ChartPointResponse> result =
+                adminDashboardService.getReservationsChart(
+                        ChartPeriod.YEAR
+                );
+
+        assertEquals(12, result.size());
+
+        assertEquals("Enero", result.get(0).getPeriod());
+        assertEquals(5L, result.get(0).getTotal());
+
+        assertEquals("Febrero", result.get(1).getPeriod());
+        assertEquals(8L, result.get(1).getTotal());
+
+        assertEquals("Marzo", result.get(2).getPeriod());
+        assertEquals(0L, result.get(2).getTotal());
+
+        assertEquals("Julio", result.get(6).getPeriod());
+        assertEquals(3L, result.get(6).getTotal());
+
+        verify(reservationRepository)
+                .countReservationsByMonthCurrentYear();
     }
 }
