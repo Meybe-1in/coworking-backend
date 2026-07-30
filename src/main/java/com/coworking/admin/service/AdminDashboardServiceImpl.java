@@ -115,7 +115,72 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private List<ChartPointResponse> groupByDay(List<Reservation> reservations) {
 
-        return List.of();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        Map<String, Long> grouped = reservations
+                .stream()
+                .collect(Collectors.groupingBy(reservation -> reservation
+                                        .getCreatedAt()
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                        .format(formatter),
+                                TreeMap::new,
+                                Collectors.counting()
+                        )
+                );
+
+        return grouped.entrySet()
+                .stream()
+                .map(entry -> ChartPointResponse
+                        .builder()
+                        .period(entry.getKey())
+                        .total(entry.getValue())
+                        .build()
+                )
+                .toList();
+    }
+
+    /*
+     * Completa los doce meses del año para que el frontend
+     * siempre reciba una serie continua, incluso cuando
+     * existan meses sin reservas.
+     */
+
+    private List<ChartPointResponse> groupByMonth() {
+
+        List<Object[]> query = reservationRepository.countReservationsByMonthCurrentYear();
+        Map<Integer, Long> totals = new HashMap<>();
+
+        query.forEach(row -> totals.put(
+                        ((Number) row[0]).intValue(),
+                        ((Number) row[1]).longValue()
+                )
+        );
+
+        List<ChartPointResponse> result = new ArrayList<>();
+
+        Locale locale = Locale.forLanguageTag("es");
+
+        for (int month = 1; month <= 12; month++) {
+
+            String label = Month.of(month)
+                    .getDisplayName(
+                            TextStyle.FULL,
+                            locale
+                    );
+
+            label = Character.toUpperCase(label.charAt(0)) + label.substring(1);
+
+            result.add(ChartPointResponse
+                    .builder()
+                    .period(label)
+                    .total(totals
+                            .getOrDefault(month, 0L
+                            )
+                    )
+
+                    .build()
+            );
 
     }
 
