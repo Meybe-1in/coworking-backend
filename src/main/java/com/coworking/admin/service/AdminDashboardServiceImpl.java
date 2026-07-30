@@ -93,16 +93,17 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     @Override
-    public List<ChartPointResponse> getReservationsChart(
-            ChartPeriod period
-    ) {
-
-        Instant start = ChartDateUtils.getStartDate(period);
-
-        Instant end = ChartDateUtils.getEndDate();
-
-        List<Reservation> reservations = reservationRepository
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(start, end);
+    public List<ChartPointResponse> getReservationsChart(ChartPeriod period) {
+        /*
+         * La gráfica reutiliza un único endpoint para todos los períodos.
+         *
+         * WEEK  -> agrupación diaria.
+         * MONTH -> agrupación diaria.
+         * YEAR  -> agrupación mensual.
+         *
+         * Para la vista anual se utiliza una consulta GROUP BY en la base
+         * de datos para evitar cargar todas las reservas en memoria.
+         */
 
         return mapReservations(reservations, period);
     }
