@@ -1,6 +1,7 @@
 package com.coworking.service.admin;
 
 import com.coworking.admin.dto.*;
+import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
@@ -28,7 +29,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -85,106 +89,6 @@ class AdminServiceTest {
                 .thenReturn(authentication);
 
         SecurityContextHolder.setContext(securityContext);
-    }
-
-    @Test
-    void shouldReturnAdminStats() {
-
-        // Arrange
-        when(reservationRepository.count())
-                .thenReturn(10L);
-
-        when(reservationRepository.countByStatus(ReservationStatus.PAID))
-                .thenReturn(5L);
-
-        when(reservationRepository.countByStatus(ReservationStatus.PENDING))
-                .thenReturn(2L);
-
-        when(reservationRepository.countByStatus(ReservationStatus.CANCELLED))
-                .thenReturn(1L);
-
-        when(reservationRepository.countByStatus(ReservationStatus.EXPIRED))
-                .thenReturn(2L);
-
-        when(userRepository.count())
-                .thenReturn(25L);
-
-        when(userRepository.countByEnabledTrue())
-                .thenReturn(20L);
-
-        when(userRepository.countByEnabledFalse())
-                .thenReturn(5L);
-
-        when(roomRepository.count())
-                .thenReturn(8L);
-
-        when(roomRepository.countByAvailableTrue())
-                .thenReturn(6L);
-
-        when(roomRepository.countByAvailableFalse())
-                .thenReturn(2L);
-
-        when(reservationRepository.countByCreatedAtBetween(any(), any()))
-                .thenReturn(4L)
-                .thenReturn(18L);
-
-        when(paymentRepository.getTotalRevenue())
-                .thenReturn(BigDecimal.valueOf(1000));
-
-        when(paymentRepository.getMonthlyRevenue())
-                .thenReturn(BigDecimal.valueOf(300));
-
-        // Act
-        AdminStatsResponse response = adminService.getStats();
-
-        // Assert
-        assertEquals(10L, response.totalReservations());
-        assertEquals(5L, response.activeReservations());
-        assertEquals(2L, response.pendingReservations());
-        assertEquals(1L, response.cancelledReservations());
-        assertEquals(2L, response.expiredReservations());
-
-        assertEquals(25L, response.totalUsers());
-        assertEquals(20L, response.activeUsers());
-        assertEquals(5L, response.disabledUsers());
-
-        assertEquals(8L, response.totalRooms());
-        assertEquals(6L, response.availableRooms());
-        assertEquals(2L, response.unavailableRooms());
-
-        assertEquals(4L, response.todayReservations());
-        assertEquals(18L, response.monthReservations());
-
-        assertEquals(
-                BigDecimal.valueOf(1000),
-                response.totalRevenue()
-        );
-
-        assertEquals(
-                BigDecimal.valueOf(300),
-                response.monthlyRevenue()
-        );
-
-        verify(reservationRepository).count();
-
-        verify(reservationRepository).countByStatus(ReservationStatus.PAID);
-        verify(reservationRepository).countByStatus(ReservationStatus.PENDING);
-        verify(reservationRepository).countByStatus(ReservationStatus.CANCELLED);
-        verify(reservationRepository).countByStatus(ReservationStatus.EXPIRED);
-
-        verify(userRepository).count();
-        verify(userRepository).countByEnabledTrue();
-        verify(userRepository).countByEnabledFalse();
-
-        verify(roomRepository).count();
-        verify(roomRepository).countByAvailableTrue();
-        verify(roomRepository).countByAvailableFalse();
-
-        verify(reservationRepository, times(2))
-                .countByCreatedAtBetween(any(), any());
-
-        verify(paymentRepository).getTotalRevenue();
-        verify(paymentRepository).getMonthlyRevenue();
     }
 
     // Cancel reservation

@@ -72,4 +72,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     long countByStatus( ReservationStatus status);
 
     long countByCreatedAtBetween(Instant start, Instant end);
+
+    List<Reservation> findByCreatedAtBetweenOrderByCreatedAtAsc(Instant start, Instant end);
 }

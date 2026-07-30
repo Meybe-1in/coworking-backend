@@ -4,12 +4,7 @@ import com.coworking.admin.dto.*;
 import com.coworking.payment.dto.PaymentResponse;
 import com.coworking.reservation.dto.ReservationResponse;
 
-import java.util.List;
-
 public interface AdminService {
-
-    // Dashboard
-    AdminStatsResponse getStats();
 
     // Reservas
     AdminPageResponse<ReservationResponse> getReservations(

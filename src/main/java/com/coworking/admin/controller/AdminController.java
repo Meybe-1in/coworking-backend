@@ -2,6 +2,8 @@ package com.coworking.admin.controller;
 
 
 import com.coworking.admin.dto.*;
+import com.coworking.admin.enums.ChartPeriod;
+import com.coworking.admin.service.AdminDashboardService;
 import com.coworking.admin.service.AdminService;
 import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
@@ -24,16 +26,6 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
-
-    //                      Dashboard stats
-    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    // Devuelve métricas generales para el dashboard administrativo
-    @GetMapping("/stats")
-    public ResponseEntity<AdminStatsResponse> getStats() {
-        return ResponseEntity.ok(
-                adminService.getStats()
-        );
-    }
 
     //                     All reservations
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .

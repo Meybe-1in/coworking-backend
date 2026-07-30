@@ -24,11 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,73 +39,6 @@ public class AdminServiceImpl implements AdminService {
     private final PasswordEncoder passwordEncoder;
     private final RoomRepository roomRepository;
     private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$";
-
-    @Override
-    public AdminStatsResponse getStats() {
-
-        long totalReservations = reservationRepository.count();
-
-        long activeReservations =
-                reservationRepository.countByStatus(ReservationStatus.PAID);
-
-        long pendingReservations =
-                reservationRepository.countByStatus(ReservationStatus.PENDING);
-
-        long cancelledReservations =
-                reservationRepository.countByStatus(ReservationStatus.CANCELLED);
-
-        long expiredReservations =
-                reservationRepository.countByStatus(ReservationStatus.EXPIRED);
-
-        long totalUsers = userRepository.count();
-        long activeUsers = userRepository.countByEnabledTrue();
-        long disabledUsers = userRepository.countByEnabledFalse();
-
-        long totalRooms = roomRepository.count();
-        long availableRooms = roomRepository.countByAvailableTrue();
-        long unavailableRooms = roomRepository.countByAvailableFalse();
-
-        Instant now = Instant.now();
-        LocalDate today = LocalDate.now();
-        Instant startToday = today
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
-        Instant endToday = today
-                .plusDays(1)
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
-
-        long todayReservations = reservationRepository.countByCreatedAtBetween(startToday, endToday);
-
-        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
-        Instant startMonth = firstDayOfMonth
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant();
-        long monthReservations = reservationRepository.countByCreatedAtBetween(startMonth, endToday);
-
-        // Construye las métricas mostradas en el dashboard administrativo
-        return AdminStatsResponse.builder()
-                .totalReservations(totalReservations)
-                .activeReservations(activeReservations)
-                .pendingReservations(pendingReservations)
-                .cancelledReservations(cancelledReservations)
-                .expiredReservations(expiredReservations)
-
-                .totalUsers(totalUsers)
-                .activeUsers(activeUsers)
-                .disabledUsers(disabledUsers)
-
-                .totalRooms(totalRooms)
-                .availableRooms(availableRooms)
-                .unavailableRooms(unavailableRooms)
-
-                .todayReservations(todayReservations)
-                .monthReservations(monthReservations)
-
-                .totalRevenue(paymentRepository.getTotalRevenue())
-                .monthlyRevenue(paymentRepository.getMonthlyRevenue())
-                .build();
-    }
 
     // Obtiene todas las reservas y las transforma a DTO de respuesta
     @Override
