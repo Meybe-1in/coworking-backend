@@ -182,6 +182,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                     .build()
             );
 
+        }
+        return result;
     }
 
     private List<ChartPointResponse> groupByMonth(List<Reservation> reservations) {
