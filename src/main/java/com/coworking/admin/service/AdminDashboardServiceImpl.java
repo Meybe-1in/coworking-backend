@@ -4,7 +4,6 @@ import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.util.ChartDateUtils;
-import com.coworking.exception.BadRequestException;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
@@ -16,10 +15,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -93,41 +98,112 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     @Override
-    public List<ChartPointResponse> getReservationsChart(
-            ChartPeriod period
-    ) {
+    public List<ChartPointResponse> getReservationsChart(ChartPeriod period) {
+        /*
+         * La gráfica reutiliza un único endpoint para todos los períodos.
+         *
+         * WEEK  -> agrupación diaria.
+         * MONTH -> agrupación diaria.
+         * YEAR  -> agrupación mensual.
+         *
+         * Para la vista anual se utiliza una consulta GROUP BY en la base
+         * de datos para evitar cargar todas las reservas en memoria.
+         */
 
-        Instant start = ChartDateUtils.getStartDate(period);
-
-        Instant end = ChartDateUtils.getEndDate();
-
-        List<Reservation> reservations = reservationRepository
-                .findByCreatedAtBetweenOrderByCreatedAtAsc(start, end);
-
-        return mapReservations(reservations, period);
-    }
-
-    private List<ChartPointResponse> mapReservations(
-            List<Reservation> reservations,
-            ChartPeriod period
-    ) {
         return switch (period) {
-            case WEEK, MONTH -> groupByDay(reservations);
-            case YEAR -> groupByMonth(reservations);
-            default -> throw new BadRequestException("Periodo no soportado");
+            case WEEK, MONTH -> groupByDay(getReservations(period));
+            case YEAR -> groupByMonth();
         };
 
     }
 
     private List<ChartPointResponse> groupByDay(List<Reservation> reservations) {
 
-        return List.of();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+        Map<String, Long> grouped = reservations
+                .stream()
+                .collect(Collectors.groupingBy(reservation -> reservation
+                                        .getCreatedAt()
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                        .format(formatter),
+                                TreeMap::new,
+                                Collectors.counting()
+                        )
+                );
+
+        return grouped.entrySet()
+                .stream()
+                .map(entry -> ChartPointResponse
+                        .builder()
+                        .period(entry.getKey())
+                        .total(entry.getValue())
+                        .build()
+                )
+                .toList();
     }
 
-    private List<ChartPointResponse> groupByMonth(List<Reservation> reservations) {
+    /*
+     * Completa los doce meses del año para que el frontend
+     * siempre reciba una serie continua, incluso cuando
+     * existan meses sin reservas.
+     */
 
-        return List.of();
+    private List<ChartPointResponse> groupByMonth() {
 
+        List<Object[]> query = reservationRepository.countReservationsByMonthCurrentYear();
+        Map<Integer, Long> totals = new HashMap<>();
+
+        query.forEach(row -> totals.put(
+                        ((Number) row[0]).intValue(),
+                        ((Number) row[1]).longValue()
+                )
+        );
+
+        List<ChartPointResponse> result = new ArrayList<>();
+
+        Locale locale = Locale.forLanguageTag("es");
+
+        for (int month = 1; month <= 12; month++) {
+
+            String label = Month.of(month)
+                    .getDisplayName(
+                            TextStyle.FULL,
+                            locale
+                    );
+
+            label = Character.toUpperCase(label.charAt(0)) + label.substring(1);
+
+            result.add(ChartPointResponse
+                    .builder()
+                    .period(label)
+                    .total(totals
+                            .getOrDefault(month, 0L
+                            )
+                    )
+
+                    .build()
+            );
+
+        }
+        return result;
+    }
+
+    private List<Reservation> getReservations(
+            ChartPeriod period
+    ) {
+
+        Instant start =
+                ChartDateUtils.getStartDate(period);
+
+        Instant end =
+                ChartDateUtils.getEndDate();
+
+        return reservationRepository
+                .findByCreatedAtBetweenOrderByCreatedAtAsc(
+                        start,
+                        end
+                );
     }
 }

@@ -113,13 +113,13 @@ class AdminDashboardControllerTest {
 
         List<ChartPointResponse> response =
                 List.of(ChartPointResponse.builder()
-                                .label("2026-07-20")
-                                .value(5L)
+                                .period("2026-07-20")
+                                .total(5L)
                                 .build(),
 
                         ChartPointResponse.builder()
-                                .label("2026-07-21")
-                                .value(3L)
+                                .period("2026-07-21")
+                                .total(3L)
                                 .build()
                 );
 
@@ -132,8 +132,42 @@ class AdminDashboardControllerTest {
                 ).andExpect(status().isOk())
 
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].label").value("2026-07-20"))
-                .andExpect(jsonPath("$[0].value").value(5));
+                .andExpect(jsonPath("$[0].period").value("2026-07-20"))
+                .andExpect(jsonPath("$[0].total").value(5));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnMonthlyReservationsChart() throws Exception {
+
+        List<ChartPointResponse> response =
+                List.of(
+                        ChartPointResponse.builder()
+                                .period("Enero")
+                                .total(45L)
+                                .build(),
+
+                        ChartPointResponse.builder()
+                                .period("Febrero")
+                                .total(62L)
+                                .build()
+                );
+
+        when(
+                dashboardService.getReservationsChart(
+                        ChartPeriod.YEAR
+                )
+        ).thenReturn(response);
+
+        mockMvc.perform(
+                        get("/admin/dashboard/reservations/monthly")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].period").value("Enero"))
+                .andExpect(jsonPath("$[0].total").value(45))
+                .andExpect(jsonPath("$[1].period").value("Febrero"))
+                .andExpect(jsonPath("$[1].total").value(62));
     }
 
 }
