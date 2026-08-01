@@ -29,6 +29,10 @@ public class AdminDashboardController {
                 dashboardService.getStats()
         );
     }
+
+    // Reservations
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Devuelve el número de reservas por periodo
     @GetMapping("/dashboard/reservations")
     public ResponseEntity<List<ChartPointResponse>>
     getReservationsChart(
@@ -47,6 +51,20 @@ public class AdminDashboardController {
                 dashboardService.getReservationsChart(
                         ChartPeriod.YEAR
                 )
+        );
+    }
+
+    // Revenue
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Devuelve el ingreso por periodo
+
+    @GetMapping("/dashboard/revenue")
+    public ResponseEntity<List<ChartPointResponse>> getRevenueChart(
+            @RequestParam(defaultValue = "MONTH") ChartPeriod period
+    ) {
+
+        return ResponseEntity.ok(
+                dashboardService.getRevenueChart(period)
         );
     }
 
