@@ -13,6 +13,7 @@ import com.coworking.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -117,6 +118,14 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     }
 
+    @Override
+    public List<ChartPointResponse> getRevenueChart(ChartPeriod period) {
+        return switch (period) {
+            case WEEK, MONTH -> groupRevenueByDay(period);
+            case YEAR -> groupRevenueByMonth();
+        };
+    }
+
     private List<ChartPointResponse> groupByDay(List<Reservation> reservations) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -138,7 +147,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .map(entry -> ChartPointResponse
                         .builder()
                         .period(entry.getKey())
-                        .total(entry.getValue())
+                        .total(BigDecimal.valueOf(entry.getValue()))
                         .build()
                 )
                 .toList();
@@ -178,9 +187,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             result.add(ChartPointResponse
                     .builder()
                     .period(label)
-                    .total(totals
-                            .getOrDefault(month, 0L
-                            )
+                    .total(BigDecimal.valueOf(totals
+                            .getOrDefault(month, 0L))
                     )
 
                     .build()
@@ -205,5 +213,84 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                         start,
                         end
                 );
+    }
+
+    /*
+     * Obtiene los ingresos del período solicitado y los agrupa por día.
+     * Se utiliza para las vistas WEEK y MONTH.
+     */
+    private List<ChartPointResponse> groupRevenueByDay(ChartPeriod period) {
+        Instant start = ChartDateUtils.getStartDate(period);
+        Instant end = ChartDateUtils.getEndDate();
+
+        List<Object[]> query = paymentRepository.getRevenueGroupedByDay(start, end);
+        Map<String, BigDecimal> totals = new HashMap<>();
+
+        query.forEach(row -> totals.put(
+                row[0].toString(),
+                new BigDecimal(row[1].toString())
+        ));
+
+        return fillMissingDays(start, end, totals);
+    }
+
+    private List<ChartPointResponse> fillMissingDays(Instant start, Instant end, Map<String, BigDecimal> totals) {
+
+        List<ChartPointResponse> result = new ArrayList<>();
+
+        LocalDate startDate = start.atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate endDate = end.atZone(ZoneId.systemDefault()).toLocalDate();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        while (!startDate.isAfter(endDate)) {
+
+            String period = startDate.format(formatter);
+
+            result.add(
+                    ChartPointResponse.builder()
+                            .period(period)
+                            .total(totals.getOrDefault(
+                                    period,
+                                    BigDecimal.ZERO))
+                            .build()
+            );
+            startDate = startDate.plusDays(1);
+        }
+        return result;
+    }
+
+    private List<ChartPointResponse> groupRevenueByMonth() {
+
+        List<Object[]> query = paymentRepository.getRevenueGroupedByMonthCurrentYear();
+
+        Map<Integer, BigDecimal> totals = new HashMap<>();
+
+        query.forEach(row -> totals.put(
+                ((Number) row[0]).intValue(),
+                new BigDecimal(row[1].toString())
+        ));
+
+        List<ChartPointResponse> result = new ArrayList<>();
+
+        Locale locale = Locale.forLanguageTag("es");
+
+        for (int month = 1; month <= 12; month++) {
+
+            String label = Month.of(month)
+                    .getDisplayName(TextStyle.FULL, locale);
+
+            label = Character.toUpperCase(label.charAt(0))
+                    + label.substring(1);
+
+            result.add(
+                    ChartPointResponse.builder()
+                            .period(label)
+                            .total(
+                                    totals.getOrDefault(month, BigDecimal.ZERO)
+                            )
+                            .build()
+            );
+        }
+        return result;
     }
 }
