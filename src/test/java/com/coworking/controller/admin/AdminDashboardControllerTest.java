@@ -114,12 +114,12 @@ class AdminDashboardControllerTest {
         List<ChartPointResponse> response =
                 List.of(ChartPointResponse.builder()
                                 .period("2026-07-20")
-                                .total(5L)
+                                .total(BigDecimal.valueOf(5))
                                 .build(),
 
                         ChartPointResponse.builder()
                                 .period("2026-07-21")
-                                .total(3L)
+                                .total(BigDecimal.valueOf(3))
                                 .build()
                 );
 
@@ -144,12 +144,12 @@ class AdminDashboardControllerTest {
                 List.of(
                         ChartPointResponse.builder()
                                 .period("Enero")
-                                .total(45L)
+                                .total(BigDecimal.valueOf(45))
                                 .build(),
 
                         ChartPointResponse.builder()
                                 .period("Febrero")
-                                .total(62L)
+                                .total(BigDecimal.valueOf(62))
                                 .build()
                 );
 
