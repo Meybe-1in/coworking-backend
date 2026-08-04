@@ -2,6 +2,7 @@ package com.coworking.admin.service;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.util.ChartDateUtils;
 import com.coworking.payment.repository.PaymentRepository;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -124,6 +126,40 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             case WEEK, MONTH -> groupRevenueByDay(period);
             case YEAR -> groupRevenueByMonth();
         };
+    }
+
+    @Override
+    public List<RoomOccupancyResponse> getRoomOccupancy() {
+        List<Object[]> data = roomRepository.getRoomOccupancy();
+
+        return data.stream()
+                .map(row -> {
+                    String roomName = row[0].toString();
+                    long reservations = ((Number)row[1]).longValue();
+                    BigDecimal hours = BigDecimal.valueOf(((Number)row[2]).doubleValue());
+                    BigDecimal percentage = calculateOccupancy(hours);
+
+                    return RoomOccupancyResponse.builder()
+                            .roomName(roomName)
+                            .reservationCount(reservations)
+                            .reservedHours(hours)
+                            .occupancyPercentage(percentage)
+                            .build();
+                })
+                .toList();
+    }
+
+    private BigDecimal calculateOccupancy(BigDecimal reservedHours) {
+        int days = LocalDate.now().lengthOfMonth();
+        BigDecimal availableHours = BigDecimal.valueOf(days * 13L);
+
+        return reservedHours
+                .multiply(BigDecimal.valueOf(100))
+                .divide(
+                   availableHours,
+                   2,
+                   RoundingMode.HALF_UP
+                );
     }
 
     private List<ChartPointResponse> groupByDay(List<Reservation> reservations) {
