@@ -3,6 +3,7 @@ package com.coworking.controller.admin;
 import com.coworking.admin.controller.AdminDashboardController;
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminDashboardService;
 
@@ -168,6 +169,41 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$[0].total").value(45))
                 .andExpect(jsonPath("$[1].period").value("Febrero"))
                 .andExpect(jsonPath("$[1].total").value(62));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnRoomOccupancy() throws Exception {
+
+        List<RoomOccupancyResponse> response =
+                List.of(
+                        RoomOccupancyResponse.builder()
+                                .roomName("Sala A")
+                                .reservationCount(20)
+                                .reservedHours(BigDecimal.valueOf(100))
+                                .occupancyPercentage(BigDecimal.valueOf(75))
+                                .build(),
+
+                        RoomOccupancyResponse.builder()
+                                .roomName("Sala B")
+                                .reservationCount(10)
+                                .reservedHours(BigDecimal.valueOf(50))
+                                .occupancyPercentage(BigDecimal.valueOf(40))
+                                .build()
+                );
+
+
+        when(dashboardService.getRoomOccupancy()).thenReturn(response);
+
+        mockMvc.perform(
+                        get("/admin/dashboard/room-occupancy")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].roomName").value("Sala A"))
+                .andExpect(jsonPath("$[0].reservationCount").value(20))
+                .andExpect(jsonPath("$[0].reservedHours").value(100))
+                .andExpect(jsonPath("$[0].occupancyPercentage").value(75));
     }
 
 }
