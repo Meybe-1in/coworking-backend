@@ -2,6 +2,7 @@ package com.coworking.service.admin;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminDashboardServiceImpl;
 import com.coworking.payment.repository.PaymentRepository;
@@ -275,6 +276,7 @@ public class AdminDashboardServiceTest {
         verify(reservationRepository)
                 .countReservationsByMonthCurrentYear();
     }
+
     //Ingresos por dia
     @Test
     void shouldGroupRevenueByDayForShortPeriods() {
@@ -317,6 +319,40 @@ public class AdminDashboardServiceTest {
         assertEquals(new BigDecimal("500.00"), result.get(6).getTotal());
 
         verify(paymentRepository).getRevenueGroupedByMonthCurrentYear();
+    }
+
+    @Test
+    void shouldReturnRoomOccupancyRanking() {
+
+        Object[] firstRoom =
+                new Object[]{"Sala A", 20L, 100.0
+                };
+
+
+        Object[] secondRoom =
+                new Object[]{"Sala B", 10L, 50.0
+                };
+
+        when(roomRepository.getRoomOccupancy())
+                .thenReturn(
+                        List.of(firstRoom, secondRoom)
+                );
+
+
+        List<RoomOccupancyResponse> result = adminDashboardService.getRoomOccupancy();
+
+        assertEquals(2, result.size());
+        assertEquals("Sala A", result.getFirst().roomName());
+        assertEquals(20, result.getFirst().reservationCount());
+        assertEquals(BigDecimal.valueOf(100.0), result.getFirst().reservedHours());
+
+        assertTrue(
+                result.getFirst()
+                        .occupancyPercentage()
+                        .compareTo(BigDecimal.ZERO) > 0
+        );
+
+        verify(roomRepository).getRoomOccupancy();
     }
 
 
