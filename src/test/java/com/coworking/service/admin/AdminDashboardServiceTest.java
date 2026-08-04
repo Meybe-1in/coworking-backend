@@ -197,10 +197,10 @@ public class AdminDashboardServiceTest {
         assertEquals(2, result.size());
 
         assertEquals("2026-07-20", result.get(0).getPeriod());
-        assertEquals(2L, result.get(0).getTotal());
+        assertEquals(BigDecimal.valueOf(2), result.get(0).getTotal());
 
         assertEquals("2026-07-21", result.get(1).getPeriod());
-        assertEquals(1L, result.get(1).getTotal());
+        assertEquals(BigDecimal.valueOf(1), result.get(1).getTotal());
 
         verify(reservationRepository)
                 .findByCreatedAtBetweenOrderByCreatedAtAsc(
@@ -226,11 +226,11 @@ public class AdminDashboardServiceTest {
 
         assertEquals(12, result.size());
 
-        assertEquals("Enero", result.get(0).getPeriod());
-        assertEquals(0L, result.get(0).getTotal());
+        assertEquals("Enero", result.getFirst().getPeriod());
+        assertEquals(BigDecimal.ZERO, result.getFirst().getTotal());
 
         assertEquals("Diciembre", result.get(11).getPeriod());
-        assertEquals(0L, result.get(11).getTotal());
+        assertEquals(BigDecimal.ZERO, result.get(11).getTotal());
 
         verify(reservationRepository)
                 .countReservationsByMonthCurrentYear();
@@ -261,18 +261,63 @@ public class AdminDashboardServiceTest {
         assertEquals(12, result.size());
 
         assertEquals("Enero", result.get(0).getPeriod());
-        assertEquals(5L, result.get(0).getTotal());
+        assertEquals(BigDecimal.valueOf(5), result.get(0).getTotal());
 
         assertEquals("Febrero", result.get(1).getPeriod());
-        assertEquals(8L, result.get(1).getTotal());
+        assertEquals(BigDecimal.valueOf(8), result.get(1).getTotal());
 
         assertEquals("Marzo", result.get(2).getPeriod());
-        assertEquals(0L, result.get(2).getTotal());
+        assertEquals(BigDecimal.ZERO, result.get(2).getTotal());
 
         assertEquals("Julio", result.get(6).getPeriod());
-        assertEquals(3L, result.get(6).getTotal());
+        assertEquals(BigDecimal.valueOf(3), result.get(6).getTotal());
 
         verify(reservationRepository)
                 .countReservationsByMonthCurrentYear();
     }
+    //Ingresos por dia
+    @Test
+    void shouldGroupRevenueByDayForShortPeriods() {
+
+        when(paymentRepository.getRevenueGroupedByDay(any(), any()))
+                .thenReturn(List.of(
+                        new Object[]{"2026-07-25", new BigDecimal("150.00")},
+                        new Object[]{"2026-07-27", new BigDecimal("300.00")}
+                ));
+
+        List<ChartPointResponse> result = adminDashboardService.getRevenueChart(ChartPeriod.WEEK);
+
+        assertEquals(8, result.size());
+        assertEquals("2026-07-25", result.get(0).getPeriod());
+        assertEquals(new BigDecimal("150.00"), result.get(0).getTotal());
+        assertEquals("2026-07-26", result.get(1).getPeriod());
+        assertEquals(BigDecimal.ZERO, result.get(1).getTotal());
+
+        verify(paymentRepository).getRevenueGroupedByDay(any(), any());
+    }
+
+    //Ingresos anual
+    @Test
+    void shouldReturnTwelveMonthsForRevenueYearChartIncludingEmptyMonths() {
+
+        when(paymentRepository.getRevenueGroupedByMonthCurrentYear())
+                .thenReturn(List.of(
+                        new Object[]{1, new BigDecimal("1200.50")},
+                        new Object[]{7, new BigDecimal("500.00")}
+                ));
+
+        List<ChartPointResponse> result = adminDashboardService.getRevenueChart(ChartPeriod.YEAR);
+
+        assertEquals(12, result.size());
+        assertEquals("Enero", result.get(0).getPeriod());
+        assertEquals(new BigDecimal("1200.50"), result.get(0).getTotal());
+        assertEquals("Febrero", result.get(1).getPeriod());
+        assertEquals(BigDecimal.ZERO, result.get(1).getTotal());
+        assertEquals("Julio", result.get(6).getPeriod());
+        assertEquals(new BigDecimal("500.00"), result.get(6).getTotal());
+
+        verify(paymentRepository).getRevenueGroupedByMonthCurrentYear();
+    }
+
+
 }

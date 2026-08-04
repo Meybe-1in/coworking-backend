@@ -7,9 +7,15 @@ import com.coworking.admin.enums.ChartPeriod;
 import java.util.List;
 
 public interface AdminDashboardService {
+
     AdminStatsResponse getStats();
 
     List<ChartPointResponse> getReservationsChart(
             ChartPeriod period
     );
+
+    List<ChartPointResponse> getRevenueChart(
+            ChartPeriod period
+    );
+
 }
