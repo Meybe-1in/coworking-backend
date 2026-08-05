@@ -2,9 +2,11 @@ package com.coworking.admin.service;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RecentActivityResponse;
 import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.util.ChartDateUtils;
+import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
@@ -22,12 +24,7 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -135,8 +132,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return data.stream()
                 .map(row -> {
                     String roomName = row[0].toString();
-                    long reservations = ((Number)row[1]).longValue();
-                    BigDecimal hours = BigDecimal.valueOf(((Number)row[2]).doubleValue());
+                    long reservations = ((Number) row[1]).longValue();
+                    BigDecimal hours = BigDecimal.valueOf(((Number) row[2]).doubleValue());
                     BigDecimal percentage = calculateOccupancy(hours);
 
                     return RoomOccupancyResponse.builder()
@@ -149,6 +146,41 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .toList();
     }
 
+    @Override
+    public List<RecentActivityResponse> getRecentActivities() {
+        List<RecentActivityResponse> activities = new ArrayList<>();
+
+        reservationRepository.findTop8ByOrderByCreatedAtDesc()
+                .forEach(reservation ->
+                        activities.add(RecentActivityResponse.builder()
+                                .type("Reserva")
+                                .description("Creó una reserva para " + reservation.getRoom().getName())
+                                .date(reservation.getCreatedAt())
+                                .user(reservation.getUser().getUsername())
+                                .build()
+                        )
+                );
+
+        paymentRepository.findTop8ByStatusOrderByPaidAtDesc(PaymentStatus.SUCCEEDED)
+                .forEach(payment ->
+                        activities.add(
+                                RecentActivityResponse.builder()
+                                        .type("Pago")
+                                        .description("Completó el pago de " + payment.getReservation().getRoom().getName())
+                                        .date(payment.getPaidAt())
+                                        .user(payment.getReservation().getUser().getUsername())
+                                        .build()
+                        )
+                );
+
+        return activities.stream()
+                .sorted(
+                        Comparator.comparing(RecentActivityResponse::date).reversed()
+                ).limit(4)
+                .toList();
+
+    }
+
     private BigDecimal calculateOccupancy(BigDecimal reservedHours) {
         int days = LocalDate.now().lengthOfMonth();
         BigDecimal availableHours = BigDecimal.valueOf(days * 13L);
@@ -156,9 +188,9 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return reservedHours
                 .multiply(BigDecimal.valueOf(100))
                 .divide(
-                   availableHours,
-                   2,
-                   RoundingMode.HALF_UP
+                        availableHours,
+                        2,
+                        RoundingMode.HALF_UP
                 );
     }
 
