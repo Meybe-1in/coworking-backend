@@ -84,7 +84,7 @@ public class AdminDashboardController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Devuelve las actividades más recientes del sistema
 
-    @GetMapping("/dashboard/recent-activity")
+    @GetMapping("/dashboard/recent-activities")
     public ResponseEntity<List<RecentActivityResponse>>
     getRecentActivity() {
 
