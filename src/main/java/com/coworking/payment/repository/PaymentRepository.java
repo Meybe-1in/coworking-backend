@@ -1,5 +1,6 @@
 package com.coworking.payment.repository;
 
+import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -56,5 +57,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             ORDER BY EXTRACT(MONTH FROM p.paidAt)
             """)
     List<Object[]> getRevenueGroupedByMonthCurrentYear();
+
+    List<Payment> findTop8ByStatusOrderByPaidAtDesc(
+            PaymentStatus status
+    );
 
 }

@@ -2,6 +2,7 @@ package com.coworking.admin.controller;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RecentActivityResponse;
 import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminDashboardService;
@@ -31,7 +32,7 @@ public class AdminDashboardController {
         );
     }
 
-    // Reservations
+    //                      Reservations
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Devuelve el número de reservas por periodo
     @GetMapping("/dashboard/reservations")
@@ -55,7 +56,7 @@ public class AdminDashboardController {
         );
     }
 
-    // Revenue
+    //              Revenue
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Devuelve el ingreso por periodo
 
@@ -76,6 +77,19 @@ public class AdminDashboardController {
     public ResponseEntity<List<RoomOccupancyResponse>> getRoomOccupancy() {
         return ResponseEntity.ok(
                 dashboardService.getRoomOccupancy()
+        );
+    }
+
+    //              Recent Activity
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Devuelve las actividades más recientes del sistema
+
+    @GetMapping("/dashboard/recent-activities")
+    public ResponseEntity<List<RecentActivityResponse>>
+    getRecentActivity() {
+
+        return ResponseEntity.ok(
+                dashboardService.getRecentActivities()
         );
     }
 }
