@@ -448,7 +448,7 @@ public class AdminDashboardServiceTest {
 
         List<RecentActivityResponse> result = adminDashboardService.getRecentActivities();
 
-        assertEquals(4, result.size());
+        assertEquals(8, result.size());
 
     }
 }

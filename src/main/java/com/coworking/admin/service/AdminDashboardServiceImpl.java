@@ -176,7 +176,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return activities.stream()
                 .sorted(
                         Comparator.comparing(RecentActivityResponse::date).reversed()
-                ).limit(4)
+                ).limit(8)
                 .toList();
 
     }
