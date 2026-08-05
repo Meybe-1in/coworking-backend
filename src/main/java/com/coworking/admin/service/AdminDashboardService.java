@@ -2,6 +2,7 @@ package com.coworking.admin.service;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RecentActivityResponse;
 import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 
@@ -20,4 +21,6 @@ public interface AdminDashboardService {
     );
 
     List<RoomOccupancyResponse> getRoomOccupancy();
+
+    List<RecentActivityResponse> getRecentActivities();
 }
