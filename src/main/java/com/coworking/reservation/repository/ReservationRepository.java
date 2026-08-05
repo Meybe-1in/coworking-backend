@@ -86,5 +86,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
        """)
     List<Object[]> countReservationsByMonthCurrentYear();
 
+    List<Reservation> findTop8ByOrderByCreatedAtDesc();
+
 
 }
