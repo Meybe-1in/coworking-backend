@@ -3,6 +3,7 @@ package com.coworking.controller.admin;
 import com.coworking.admin.controller.AdminDashboardController;
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RecentActivityResponse;
 import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminDashboardService;
@@ -19,12 +20,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
 
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -204,6 +205,48 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$[0].reservationCount").value(20))
                 .andExpect(jsonPath("$[0].reservedHours").value(100))
                 .andExpect(jsonPath("$[0].occupancyPercentage").value(75));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldReturnRecentActivities() throws Exception {
+
+        List<RecentActivityResponse> response = List.of(
+
+                RecentActivityResponse.builder()
+                        .type("Pago")
+                        .description("Completó el pago de Sala Ejecutiva")
+                        .user("ana")
+                        .date(Instant.now())
+                        .build(),
+
+                RecentActivityResponse.builder()
+                        .type("Reserva")
+                        .description("Creó una reserva para Sala Ejecutiva")
+                        .user("juan")
+                        .date(Instant.now().minusSeconds(3600))
+                        .build()
+        );
+
+        when(dashboardService.getRecentActivities()).thenReturn(response);
+
+        mockMvc.perform(get("/admin/dashboard/recent-activity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+
+                .andExpect(jsonPath("$[0].type").value("Pago"))
+
+                .andExpect(jsonPath("$[0].description").value("Completó el pago de Sala Ejecutiva"))
+
+                .andExpect(jsonPath("$[0].user").value("ana"))
+
+                .andExpect(jsonPath("$[1].type").value("Reserva"))
+
+                .andExpect(jsonPath("$[1].description").value("Creó una reserva para Sala Ejecutiva"))
+
+                .andExpect(jsonPath("$[1].user").value("juan"));
+
+        verify(dashboardService).getRecentActivities();
     }
 
 }

@@ -2,14 +2,18 @@ package com.coworking.service.admin;
 
 import com.coworking.admin.dto.AdminStatsResponse;
 import com.coworking.admin.dto.ChartPointResponse;
+import com.coworking.admin.dto.RecentActivityResponse;
 import com.coworking.admin.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminDashboardServiceImpl;
+import com.coworking.payment.enums.PaymentStatus;
+import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.role.repository.RoleRepository;
+import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
@@ -28,6 +32,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -356,4 +362,93 @@ public class AdminDashboardServiceTest {
     }
 
 
+    @Test
+    void shouldReturnRecentActivitiesOrderedByDate() {
+
+        // ---------- Reserva ----------
+        User reservationUser = new User();
+        reservationUser.setUsername("juan");
+
+        Room room = new Room();
+        room.setName("Sala Ejecutiva");
+
+        Reservation reservation = new Reservation();
+        reservation.setUser(reservationUser);
+        reservation.setRoom(room);
+        reservation.setCreatedAt(
+                Instant.now().minus(2, ChronoUnit.HOURS)
+        );
+
+        // ---------- Pago ----------
+        User paymentUser = new User();
+        paymentUser.setUsername("ana");
+
+        Reservation paidReservation = new Reservation();
+        paidReservation.setUser(paymentUser);
+        paidReservation.setRoom(room);
+
+        Payment payment = new Payment();
+        payment.setReservation(paidReservation);
+        payment.setStatus(PaymentStatus.SUCCEEDED);
+        payment.setPaidAt(
+                Instant.now().minus(1, ChronoUnit.HOURS)
+        );
+
+        when(reservationRepository.findTop8ByOrderByCreatedAtDesc()).thenReturn(
+                List.of(reservation)
+        );
+        when(paymentRepository.findTop8ByStatusOrderByPaidAtDesc(PaymentStatus.SUCCEEDED)).thenReturn(
+                List.of(payment)
+        );
+
+        // Act
+        List<RecentActivityResponse> result = adminDashboardService.getRecentActivities();
+
+        // Assert
+        assertEquals(2, result.size());
+
+        // El pago debe ir primero porque es más reciente
+        assertEquals("Pago", result.get(0).type());
+        assertEquals("Completó el pago de Sala Ejecutiva", result.get(0).description());
+        assertEquals("ana", result.get(0).user());
+        assertEquals("Reserva", result.get(1).type());
+        assertEquals("Creó una reserva para Sala Ejecutiva", result.get(1).description());
+        assertEquals("juan", result.get(1).user());
+
+        verify(reservationRepository).findTop8ByOrderByCreatedAtDesc();
+        verify(paymentRepository).findTop8ByStatusOrderByPaidAtDesc(PaymentStatus.SUCCEEDED);
+
+    }
+
+    @Test
+    void shouldLimitRecentActivitiesToEightRecords() {
+
+        List<Reservation> reservations = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+
+            User user = new User();
+            user.setUsername("user" + i);
+
+            Room room = new Room();
+            room.setName("Sala " + i);
+
+            Reservation reservation = new Reservation();
+            reservation.setUser(user);
+            reservation.setRoom(room);
+            reservation.setCreatedAt(
+                    Instant.now().minus(i, ChronoUnit.MINUTES)
+            );
+
+            reservations.add(reservation);
+        }
+
+        when(reservationRepository.findTop8ByOrderByCreatedAtDesc()).thenReturn(reservations);
+        when(paymentRepository.findTop8ByStatusOrderByPaidAtDesc(PaymentStatus.SUCCEEDED)).thenReturn(List.of());
+
+        List<RecentActivityResponse> result = adminDashboardService.getRecentActivities();
+
+        assertEquals(4, result.size());
+
+    }
 }
