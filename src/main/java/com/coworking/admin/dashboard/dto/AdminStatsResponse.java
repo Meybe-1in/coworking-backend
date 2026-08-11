@@ -1,8 +1,5 @@
-package com.coworking.admin.dto;
+package com.coworking.admin.dashboard.dto;
 
-import com.coworking.reservation.repository.ReservationRepository;
-import com.coworking.room.repository.RoomRepository;
-import com.coworking.user.repository.UserRepository;
 import lombok.Builder;
 
 import java.math.BigDecimal;

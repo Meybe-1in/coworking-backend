@@ -2,8 +2,6 @@ package com.coworking.admin.controller;
 
 
 import com.coworking.admin.dto.*;
-import com.coworking.admin.enums.ChartPeriod;
-import com.coworking.admin.service.AdminDashboardService;
 import com.coworking.admin.service.AdminService;
 import com.coworking.dto.common.ApiResponseDto;
 import com.coworking.payment.dto.PaymentResponse;
@@ -13,11 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/admin")

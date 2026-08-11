@@ -1,4 +1,4 @@
-package com.coworking.admin.dto;
+package com.coworking.admin.dashboard.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

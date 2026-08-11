@@ -1,11 +1,11 @@
-package com.coworking.admin.controller;
+package com.coworking.admin.dashboard.controller;
 
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.ChartPointResponse;
-import com.coworking.admin.dto.RecentActivityResponse;
-import com.coworking.admin.dto.RoomOccupancyResponse;
+import com.coworking.admin.dashboard.dto.AdminStatsResponse;
+import com.coworking.admin.dashboard.dto.ChartPointResponse;
+import com.coworking.admin.dashboard.dto.RecentActivityResponse;
+import com.coworking.admin.dashboard.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
-import com.coworking.admin.service.AdminDashboardService;
+import com.coworking.admin.dashboard.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
