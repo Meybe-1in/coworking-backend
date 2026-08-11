@@ -1,32 +1,26 @@
 package com.coworking.service.admin;
 
-import com.coworking.admin.dto.AdminStatsResponse;
-import com.coworking.admin.dto.ChartPointResponse;
-import com.coworking.admin.dto.RecentActivityResponse;
-import com.coworking.admin.dto.RoomOccupancyResponse;
+import com.coworking.admin.dashboard.dto.AdminStatsResponse;
+import com.coworking.admin.dashboard.dto.ChartPointResponse;
+import com.coworking.admin.dashboard.dto.RecentActivityResponse;
+import com.coworking.admin.dashboard.dto.RoomOccupancyResponse;
 import com.coworking.admin.enums.ChartPeriod;
-import com.coworking.admin.service.AdminDashboardServiceImpl;
+import com.coworking.admin.dashboard.service.AdminDashboardServiceImpl;
 import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
-import com.coworking.role.repository.RoleRepository;
 import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -35,7 +29,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
