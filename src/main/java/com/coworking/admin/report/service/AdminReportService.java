@@ -1,19 +1,16 @@
 package com.coworking.admin.report.service;
 
 import com.coworking.admin.report.dto.FinancialReportResponse;
-import com.coworking.admin.report.dto.ReservationReportResponse;
+import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
+import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 
-public class AdminReportService {
-    public ReservationReportResponse getReservationReport() {
-        return null;
-    }
+public interface AdminReportService {
+    ReservationReportResponse getReservationReport(
+            ReservationReportRequest request
+    );
 
-    public FinancialReportResponse getFinancialReport() {
-        return null;
-    }
+    FinancialReportResponse getFinancialReport();
 
-    public RoomUsageReportResponse getRoomUsageReport() {
-        return null;
-    }
+    RoomUsageReportResponse getRoomUsageReport();
 }
