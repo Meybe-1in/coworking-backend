@@ -5,15 +5,15 @@ import com.coworking.admin.report.dto.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 
 public class AdminReportService {
-    ReservationReportResponse getReservationReport() {
+    public ReservationReportResponse getReservationReport() {
         return null;
     }
 
-    FinancialReportResponse getFinancialReport() {
+    public FinancialReportResponse getFinancialReport() {
         return null;
     }
 
-    RoomUsageReportResponse getRoomUsageReport() {
+    public RoomUsageReportResponse getRoomUsageReport() {
         return null;
     }
 }
