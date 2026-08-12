@@ -4,7 +4,6 @@ import com.coworking.admin.report.dto.FinancialReportResponse;
 import com.coworking.admin.report.dto.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.service.AdminReportService;
-import com.coworking.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
