@@ -1,24 +1,23 @@
 package com.coworking.admin.report.controller;
 
 import com.coworking.admin.report.dto.FinancialReportResponse;
-import com.coworking.admin.report.dto.ReservationReportResponse;
+import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
+import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/admin/report")
+@RequestMapping("/admin/reports")
 @RequiredArgsConstructor
 public class AdminReportController {
 
     private final AdminReportService adminReportService;
 
-    @GetMapping("/reservations")
-    public ReservationReportResponse getReservationReport() {
-        return adminReportService.getReservationReport();
+    @PostMapping("/reservations")
+    public ReservationReportResponse getReservationReport(@RequestBody ReservationReportRequest request) {
+        return adminReportService.getReservationReport(request);
     }
 
     @GetMapping("/financial")
