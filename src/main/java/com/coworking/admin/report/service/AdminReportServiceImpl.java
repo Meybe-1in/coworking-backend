@@ -7,6 +7,7 @@ import com.coworking.admin.report.dto.reservation.ReservationReportMetricResult;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.enums.reservation.ReservationReportMetric;
+import com.coworking.admin.report.generator.reservation.ReservationReportCsvGenerator;
 import com.coworking.admin.report.generator.reservation.ReservationReportPdfGenerator;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
@@ -26,6 +27,7 @@ import java.util.List;
 public class AdminReportServiceImpl implements AdminReportService {
     private final ReservationRepository reservationRepository;
     private final ReservationReportPdfGenerator reservationReportPdfGenerator;
+    private final ReservationReportCsvGenerator reservationReportCsvGenerator;
 
     private static final ZoneId ZONE_ID = ZoneId.of("America/El_Salvador");
 
@@ -70,6 +72,12 @@ public class AdminReportServiceImpl implements AdminReportService {
     public byte[] generateReservationReportPdf(ReservationReportRequest request) {
         ReservationReportResponse report = getReservationReport(request);
         return reservationReportPdfGenerator.generatePdf(report);
+    }
+
+    @Override
+    public byte[] generateReservationReportCsv(ReservationReportRequest request) {
+        ReservationReportResponse report = getReservationReport(request);
+        return reservationReportCsvGenerator.generateCsv(report);
     }
 
     private List<ReservationReportMetricResult> calculateMetrics(List<Reservation> reservations,

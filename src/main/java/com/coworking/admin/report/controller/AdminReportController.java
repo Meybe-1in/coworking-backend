@@ -18,11 +18,16 @@ public class AdminReportController {
 
     private final AdminReportService adminReportService;
 
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                    GET REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    // Get reservation report
     @PostMapping("/reservations")
     public ReservationReportResponse getReservationReport(@RequestBody ReservationReportRequest request) {
         return adminReportService.getReservationReport(request);
     }
 
+    // Generate reservation report in PDF
     @PostMapping(
             value = "/reservations/pdf",
             produces = "application/pdf"
@@ -38,11 +43,36 @@ public class AdminReportController {
                 .body(pdf);
     }
 
+    // Generate reservation report in CSV
+    @PostMapping(
+            value = "/reservations/csv",
+            produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> generateReservationReportCsv(@RequestBody ReservationReportRequest request) {
+        byte[] csv = adminReportService.generateReservationReportCsv(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=reservation-report.csv"
+                )
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                 GET FINANCIAL REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
     @GetMapping("/financial")
     public FinancialReportResponse getFinancialReport() {
         return adminReportService.getFinancialReport();
     }
 
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                  GET ROOM USAGE REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     @GetMapping("/room-usage")
     public RoomUsageReportResponse getRoomUsageReport() {
         return adminReportService.getRoomUsageReport();
