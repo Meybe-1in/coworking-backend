@@ -10,6 +10,10 @@ public interface AdminReportService {
             ReservationReportRequest request
     );
 
+    byte[] generateReservationReportPdf(
+            ReservationReportRequest request
+    );
+
     FinancialReportResponse getFinancialReport();
 
     RoomUsageReportResponse getRoomUsageReport();

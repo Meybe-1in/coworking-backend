@@ -6,6 +6,9 @@ import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +21,21 @@ public class AdminReportController {
     @PostMapping("/reservations")
     public ReservationReportResponse getReservationReport(@RequestBody ReservationReportRequest request) {
         return adminReportService.getReservationReport(request);
+    }
+
+    @PostMapping(
+            value = "/reservations/pdf",
+            produces = "application/pdf"
+    )
+    public ResponseEntity<byte[]> generateReservationReportPdf(@RequestBody ReservationReportRequest request) {
+        byte[] pdf = adminReportService.generateReservationReportPdf(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=reservation-report.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     @GetMapping("/financial")
