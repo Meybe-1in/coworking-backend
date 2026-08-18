@@ -280,19 +280,46 @@ public class AdminDashboardServiceTest {
     @Test
     void shouldGroupRevenueByDayForShortPeriods() {
 
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(6);
+
         when(paymentRepository.getRevenueGroupedByDay(any(), any()))
                 .thenReturn(List.of(
-                        new Object[]{"2026-07-25", new BigDecimal("150.00")},
-                        new Object[]{"2026-07-27", new BigDecimal("300.00")}
+                        new Object[]{startDate.toString(), new BigDecimal("150.00")},
+                        new Object[]{startDate.plusDays(2).toString(), new BigDecimal("300.00")}
                 ));
 
-        List<ChartPointResponse> result = adminDashboardService.getRevenueChart(ChartPeriod.WEEK);
+        List<ChartPointResponse> result =
+                adminDashboardService.getRevenueChart(ChartPeriod.WEEK);
 
-        assertEquals(8, result.size());
-        assertEquals("2026-07-25", result.get(0).getPeriod());
-        assertEquals(new BigDecimal("150.00"), result.get(0).getTotal());
-        assertEquals("2026-07-26", result.get(1).getPeriod());
-        assertEquals(BigDecimal.ZERO, result.get(1).getTotal());
+        assertEquals(7, result.size());
+
+        assertEquals(
+                startDate.toString(),
+                result.get(0).getPeriod()
+        );
+        assertEquals(
+                new BigDecimal("150.00"),
+                result.get(0).getTotal()
+        );
+
+        assertEquals(
+                startDate.plusDays(1).toString(),
+                result.get(1).getPeriod()
+        );
+        assertEquals(
+                BigDecimal.ZERO,
+                result.get(1).getTotal()
+        );
+
+        assertEquals(
+                startDate.plusDays(2).toString(),
+                result.get(2).getPeriod()
+        );
+        assertEquals(
+                new BigDecimal("300.00"),
+                result.get(2).getTotal()
+        );
 
         verify(paymentRepository).getRevenueGroupedByDay(any(), any());
     }
