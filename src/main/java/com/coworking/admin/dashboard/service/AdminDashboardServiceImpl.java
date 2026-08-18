@@ -307,7 +307,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<ChartPointResponse> result = new ArrayList<>();
 
         LocalDate startDate = start.atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate endDate = end.atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate endDate = end.atZone(ZoneId.systemDefault()).toLocalDate().minusDays(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         while (!startDate.isAfter(endDate)) {
