@@ -1,19 +1,38 @@
 package com.coworking.admin.report.service;
 
 import com.coworking.admin.report.dto.FinancialReportResponse;
-import com.coworking.admin.report.dto.ReservationReportResponse;
+import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
+import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 
-public class AdminReportService {
-    public ReservationReportResponse getReservationReport() {
-        return null;
-    }
+public interface AdminReportService {
 
-    public FinancialReportResponse getFinancialReport() {
-        return null;
-    }
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                      GET REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    ReservationReportResponse getReservationReport(
+            ReservationReportRequest request
+    );
 
-    public RoomUsageReportResponse getRoomUsageReport() {
-        return null;
-    }
+    // generated reservation report in PDF
+    byte[] generateReservationReportPdf(
+            ReservationReportRequest request
+    );
+
+    // generated reservation report in CSV
+    byte[] generateReservationReportCsv(
+            ReservationReportRequest request
+    );
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                        GET FINANCIAL REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+    FinancialReportResponse getFinancialReport();
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                        GET ROOM USAGE REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+    RoomUsageReportResponse getRoomUsageReport();
 }

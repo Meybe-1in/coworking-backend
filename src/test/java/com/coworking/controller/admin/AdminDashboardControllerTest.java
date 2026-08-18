@@ -230,7 +230,7 @@ class AdminDashboardControllerTest {
 
         when(dashboardService.getRecentActivities()).thenReturn(response);
 
-        mockMvc.perform(get("/admin/dashboard/recent-activity"))
+        mockMvc.perform(get("/admin/dashboard/recent-activities"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
 

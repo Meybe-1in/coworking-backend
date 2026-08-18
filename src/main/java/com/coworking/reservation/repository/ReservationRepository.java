@@ -69,24 +69,35 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     //admin metricts
 
-    long countByStatus( ReservationStatus status);
+    long countByStatus(ReservationStatus status);
 
     long countByCreatedAtBetween(Instant start, Instant end);
 
     List<Reservation> findByCreatedAtBetweenOrderByCreatedAtAsc(Instant start, Instant end);
 
     @Query("""
-       SELECT
-           MONTH(r.createdAt),
-           COUNT(r)
-       FROM Reservation r
-       WHERE YEAR(r.createdAt)=YEAR(CURRENT_DATE)
-       GROUP BY MONTH(r.createdAt)
-       ORDER BY MONTH(r.createdAt)
-       """)
+            SELECT
+                MONTH(r.createdAt),
+                COUNT(r)
+            FROM Reservation r
+            WHERE YEAR(r.createdAt)=YEAR(CURRENT_DATE)
+            GROUP BY MONTH(r.createdAt)
+            ORDER BY MONTH(r.createdAt)
+            """)
     List<Object[]> countReservationsByMonthCurrentYear();
 
     List<Reservation> findTop8ByOrderByCreatedAtDesc();
 
+    // admin report
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.startAt < :endAt
+              AND r.endAt > :startAt
+            """)
+    List<Reservation> findReservationsOverlappingPeriod(
+            @Param("startAt") Instant startAt,
+            @Param("endAt") Instant endAt
+    );
 
 }
