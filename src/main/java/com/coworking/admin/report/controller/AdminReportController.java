@@ -5,6 +5,7 @@ import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.service.AdminReportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,7 +24,7 @@ public class AdminReportController {
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Get reservation report
     @PostMapping("/reservations")
-    public ReservationReportResponse getReservationReport(@RequestBody ReservationReportRequest request) {
+    public ReservationReportResponse getReservationReport(@Valid @RequestBody ReservationReportRequest request) {
         return adminReportService.getReservationReport(request);
     }
 
@@ -32,7 +33,7 @@ public class AdminReportController {
             value = "/reservations/pdf",
             produces = "application/pdf"
     )
-    public ResponseEntity<byte[]> generateReservationReportPdf(@RequestBody ReservationReportRequest request) {
+    public ResponseEntity<byte[]> generateReservationReportPdf(@Valid @RequestBody ReservationReportRequest request) {
         byte[] pdf = adminReportService.generateReservationReportPdf(request);
         return ResponseEntity.ok()
                 .header(
@@ -48,7 +49,7 @@ public class AdminReportController {
             value = "/reservations/csv",
             produces = "text/csv"
     )
-    public ResponseEntity<byte[]> generateReservationReportCsv(@RequestBody ReservationReportRequest request) {
+    public ResponseEntity<byte[]> generateReservationReportCsv(@Valid @RequestBody ReservationReportRequest request) {
         byte[] csv = adminReportService.generateReservationReportCsv(request);
         return ResponseEntity.ok()
                 .header(
