@@ -4,6 +4,7 @@ import com.coworking.payment.enums.PaymentStatus;
 import com.coworking.payment.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -60,6 +61,47 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findTop8ByStatusOrderByPaidAtDesc(
             PaymentStatus status
+    );
+
+    //admin financial report
+
+    @Query("""
+            SELECT COALESCE(SUM(p.amount),0)
+            FROM Payment p
+            WHERE p.status = :status
+            AND p.paidAt >= :start
+            AND p.paidAt < :end
+            """)
+    BigDecimal getRevenueByPeriod(
+            @Param("status") PaymentStatus status,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
+    @Query("""
+            SELECT COUNT(p.reservation)
+            FROM Payment p
+            WHERE p.status = :status
+            AND p.paidAt >= :start
+            AND p.paidAt < :end
+            """)
+    long countReservationsByPaymentStatusAndPeriod(
+            @Param("status") PaymentStatus status,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
+    @Query("""
+            SELECT COUNT(p)
+            FROM Payment p
+            WHERE p.status = :status
+            AND p.paidAt >= :start
+            AND p.paidAt < :end
+            """)
+    long countPaymentsByStatusAndPeriod(
+            @Param("status") PaymentStatus status,
+            @Param("start") Instant start,
+            @Param("end") Instant end
     );
 
 }
