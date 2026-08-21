@@ -3,8 +3,8 @@ package com.coworking.controller.reports;
 import com.coworking.admin.report.controller.AdminReportController;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.enums.financial.FinancialReportMetric;
-import com.coworking.admin.report.service.AdminReportService;
 import com.coworking.admin.report.service.FinancialReportService;
+import com.coworking.admin.report.service.ReservationReportService;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,8 @@ class FinancialReportControllerTest {
     private FinancialReportService financialReportService;
 
     @MockitoBean
-    private AdminReportService adminReportService;
+    private ReservationReportService reservationReportService;
+
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;

@@ -5,6 +5,7 @@ import com.coworking.admin.report.dto.reservation.ReservationReportItem;
 import com.coworking.admin.report.dto.reservation.ReservationReportMetricResult;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.enums.reservation.ReservationReportMetric;
+import com.coworking.admin.report.service.FinancialReportService;
 import com.coworking.admin.report.service.ReservationReportService;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.security.JwtAuthenticationFilter;
@@ -38,18 +39,17 @@ class ReservationReportControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-
     @MockitoBean
     private ReservationReportService reservationReportService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @MockitoBean
+    private FinancialReportService financialReportService;
 
     @MockitoBean
     private JwtUtil jwtUtil;
-
-
 
 
     // =========================================================
