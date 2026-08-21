@@ -1,7 +1,5 @@
 package com.coworking.admin.report.service;
 
-import com.coworking.admin.report.dto.financial.FinancialReportResponse;
-import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.dto.reservation.ReservationReportItem;
 import com.coworking.admin.report.dto.reservation.ReservationReportMetricResult;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
@@ -24,7 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class AdminReportServiceImpl implements AdminReportService {
+public class ReservationReportServiceImpl implements ReservationReportService {
     private final ReservationRepository reservationRepository;
     private final ReservationReportPdfGenerator reservationReportPdfGenerator;
     private final ReservationReportCsvGenerator reservationReportCsvGenerator;
@@ -158,13 +156,4 @@ public class AdminReportServiceImpl implements AdminReportService {
         );
     }
 
-    @Override
-    public FinancialReportResponse getFinancialReport() {
-        return null;
-    }
-
-    @Override
-    public RoomUsageReportResponse getRoomUsageReport() {
-        return null;
-    }
 }

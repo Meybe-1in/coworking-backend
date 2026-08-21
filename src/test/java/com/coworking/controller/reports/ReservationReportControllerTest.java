@@ -5,12 +5,11 @@ import com.coworking.admin.report.dto.reservation.ReservationReportItem;
 import com.coworking.admin.report.dto.reservation.ReservationReportMetricResult;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.enums.reservation.ReservationReportMetric;
-import com.coworking.admin.report.service.AdminReportService;
+import com.coworking.admin.report.service.ReservationReportService;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,52 +17,70 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+
 @WebMvcTest(AdminReportController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class AdminReportControllerTest {
+class ReservationReportControllerTest {
+
 
     @Autowired
     private MockMvc mockMvc;
 
+
     @MockitoBean
-    private AdminReportService adminReportService;
+    private ReservationReportService reservationReportService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+
     @MockitoBean
     private JwtUtil jwtUtil;
+
+
+
+
+    // =========================================================
+    // GET RESERVATION REPORT
+    // =========================================================
+
 
     @Test
     void shouldReturnReservationReport() throws Exception {
 
-        ReservationReportResponse response =
-                createReport();
 
-        when(adminReportService.getReservationReport(any()))
-                .thenReturn(response);
+        ReservationReportResponse response =
+                createReservationReport();
+
+
+        when(
+                reservationReportService.getReservationReport(any())
+        ).thenReturn(response);
+
 
         String requestBody = """
-                {
-                    "startDate": "2026-07-01",
-                    "endDate": "2026-07-31",
-                    "metrics": [
-                        "TOTAL_RESERVAS",
-                        "PAID"
-                    ]
-                }
-                """;
+               {
+                   "startDate": "2026-07-01",
+                   "endDate": "2026-07-31",
+                   "metrics": [
+                       "TOTAL_RESERVAS",
+                       "PAID"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations")
@@ -89,18 +106,28 @@ class AdminReportControllerTest {
                 );
     }
 
+
+
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+
     @Test
     void shouldReturnBadRequestWhenStartDateIsMissing()
             throws Exception {
 
+
         String requestBody = """
-                {
-                    "endDate": "2026-07-31",
-                    "metrics": [
-                        "TOTAL_RESERVAS"
-                    ]
-                }
-                """;
+               {
+                   "endDate": "2026-07-31",
+                   "metrics": [
+                       "TOTAL_RESERVAS"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations")
@@ -109,19 +136,24 @@ class AdminReportControllerTest {
                 )
                 .andExpect(status().isBadRequest());
     }
+
+
+
 
     @Test
     void shouldReturnBadRequestWhenEndDateIsMissing()
             throws Exception {
 
+
         String requestBody = """
-                {
-                    "startDate": "2026-07-01",
-                    "metrics": [
-                        "TOTAL_RESERVAS"
-                    ]
-                }
-                """;
+               {
+                   "startDate": "2026-07-01",
+                   "metrics": [
+                       "TOTAL_RESERVAS"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations")
@@ -130,20 +162,25 @@ class AdminReportControllerTest {
                 )
                 .andExpect(status().isBadRequest());
     }
+
+
+
 
     @Test
     void shouldReturnBadRequestWhenEndDateIsBeforeStartDate()
             throws Exception {
 
+
         String requestBody = """
-                {
-                    "startDate": "2026-07-31",
-                    "endDate": "2026-07-01",
-                    "metrics": [
-                        "TOTAL_RESERVAS"
-                    ]
-                }
-                """;
+               {
+                   "startDate": "2026-07-31",
+                   "endDate": "2026-07-01",
+                   "metrics": [
+                       "TOTAL_RESERVAS"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations")
@@ -152,18 +189,23 @@ class AdminReportControllerTest {
                 )
                 .andExpect(status().isBadRequest());
     }
+
+
+
 
     @Test
     void shouldReturnBadRequestWhenMetricsAreEmpty()
             throws Exception {
 
+
         String requestBody = """
-                {
-                    "startDate": "2026-07-01",
-                    "endDate": "2026-07-31",
-                    "metrics": []
-                }
-                """;
+               {
+                   "startDate": "2026-07-01",
+                   "endDate": "2026-07-31",
+                   "metrics": []
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations")
@@ -173,25 +215,37 @@ class AdminReportControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+
+
+
+    // =========================================================
+    // PDF
+    // =========================================================
+
+
     @Test
     void shouldGeneratePdf() throws Exception {
+
 
         byte[] pdf =
                 "fake-pdf-content".getBytes();
 
+
         when(
-                adminReportService.generateReservationReportPdf(any())
+                reservationReportService.generateReservationReportPdf(any())
         ).thenReturn(pdf);
 
+
         String requestBody = """
-                {
-                    "startDate": "2026-07-01",
-                    "endDate": "2026-07-31",
-                    "metrics": [
-                        "TOTAL_RESERVAS"
-                    ]
-                }
-                """;
+               {
+                   "startDate": "2026-07-01",
+                   "endDate": "2026-07-31",
+                   "metrics": [
+                       "TOTAL_RESERVAS"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations/pdf")
@@ -215,26 +269,38 @@ class AdminReportControllerTest {
                 );
     }
 
+
+
+
+    // =========================================================
+    // CSV
+    // =========================================================
+
+
     @Test
     void shouldGenerateCsv() throws Exception {
+
 
         byte[] csv =
                 "COWORKING\r\nReporte de Reservas"
                         .getBytes();
 
+
         when(
-                adminReportService.generateReservationReportCsv(any())
+                reservationReportService.generateReservationReportCsv(any())
         ).thenReturn(csv);
 
+
         String requestBody = """
-                {
-                    "startDate": "2026-07-01",
-                    "endDate": "2026-07-31",
-                    "metrics": [
-                        "TOTAL_RESERVAS"
-                    ]
-                }
-                """;
+               {
+                   "startDate": "2026-07-01",
+                   "endDate": "2026-07-31",
+                   "metrics": [
+                       "TOTAL_RESERVAS"
+                   ]
+               }
+               """;
+
 
         mockMvc.perform(
                         post("/admin/reports/reservations/csv")
@@ -253,7 +319,16 @@ class AdminReportControllerTest {
                 );
     }
 
-    private ReservationReportResponse createReport() {
+
+
+
+    // =========================================================
+    // FIXTURE
+    // =========================================================
+
+
+    private ReservationReportResponse createReservationReport() {
+
 
         ReservationReportMetricResult totalReservations =
                 new ReservationReportMetricResult(
@@ -261,11 +336,13 @@ class AdminReportControllerTest {
                         1
                 );
 
+
         ReservationReportMetricResult paid =
                 new ReservationReportMetricResult(
                         ReservationReportMetric.PAID,
                         1
                 );
+
 
         ReservationReportItem reservation =
                 new ReservationReportItem(
