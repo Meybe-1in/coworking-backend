@@ -1,6 +1,6 @@
 package com.coworking.admin.report.controller;
 
-import com.coworking.admin.report.dto.FinancialReportResponse;
+import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
