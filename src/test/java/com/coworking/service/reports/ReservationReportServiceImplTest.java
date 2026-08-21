@@ -7,7 +7,7 @@ import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.enums.reservation.ReservationReportMetric;
 import com.coworking.admin.report.generator.reservation.ReservationReportCsvGenerator;
 import com.coworking.admin.report.generator.reservation.ReservationReportPdfGenerator;
-import com.coworking.admin.report.service.AdminReportServiceImpl;
+import com.coworking.admin.report.service.ReservationReportServiceImpl;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AdminReportServiceImplTest {
+class ReservationReportServiceImplTest {
 
     @Mock
     private ReservationRepository reservationRepository;
@@ -39,11 +39,11 @@ class AdminReportServiceImplTest {
     @Mock
     private ReservationReportCsvGenerator reservationReportCsvGenerator;
 
-    private AdminReportServiceImpl service;
+    private ReservationReportServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminReportServiceImpl(
+        service = new ReservationReportServiceImpl(
                 reservationRepository,
                 reservationReportPdfGenerator,
                 reservationReportCsvGenerator
