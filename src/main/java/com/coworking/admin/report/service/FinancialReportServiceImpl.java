@@ -1,12 +1,15 @@
 package com.coworking.admin.report.service;
 
+import com.coworking.admin.report.dto.financial.FinancialReportItem;
 import com.coworking.admin.report.dto.financial.FinancialReportRequest;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.enums.financial.FinancialReportMetric;
 import com.coworking.admin.report.generator.financial.FinancialReportCsvGenerator;
 import com.coworking.admin.report.generator.financial.FinancialReportPdfGenerator;
 import com.coworking.payment.enums.PaymentStatus;
+import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
+import com.coworking.reservation.model.Reservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -35,6 +39,17 @@ public class FinancialReportServiceImpl implements FinancialReportService {
 
         Instant start = toStartOfDay(request.startDate());
         Instant end = toStartOfDay(request.endDate().plusDays(1));
+
+        List<Payment> successfulPayments = paymentRepository.findSuccessfulPaymentsByPeriod(
+                PaymentStatus.SUCCEEDED,
+                start,
+                end
+        );
+
+        List<FinancialReportItem> reservations =
+                successfulPayments.stream()
+                        .map(this::mapToFinancialReportItem)
+                        .toList();
 
         Map<FinancialReportMetric, Object> metrics = new EnumMap<>(FinancialReportMetric.class);
 
@@ -121,8 +136,25 @@ public class FinancialReportServiceImpl implements FinancialReportService {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .metrics(metrics)
+                .reservations(reservations)
                 .build();
 
+    }
+
+    private FinancialReportItem mapToFinancialReportItem(Payment payment) {
+
+        Reservation reservation = payment.getReservation();
+
+        return FinancialReportItem.builder()
+                .reservationId(reservation.getId())
+                .username(reservation.getUser().getUsername())
+                .roomName(reservation.getRoom().getName())
+                .startAt(reservation.getStartAt())
+                .endAt(reservation.getEndAt())
+                .amount(payment.getAmount())
+                .paymentStatus(payment.getStatus())
+                .paidAt(payment.getPaidAt())
+                .build();
     }
 
     private BigDecimal calculateAverage(BigDecimal totalRevenue, Long totalReservations) {
