@@ -1,8 +1,8 @@
 package com.coworking.admin.report.generator.financial;
 
 import com.coworking.admin.report.dto.financial.FinancialReportItem;
-import com.coworking.admin.report.dto.financial.FinancialReportMetricResult;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
+import com.coworking.admin.report.enums.financial.FinancialReportMetric;
 import com.coworking.payment.enums.PaymentStatus;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +12,7 @@ import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -52,10 +53,14 @@ public class FinancialReportCsvGenerator {
 
             writeHeader(writer, report);
             writer.write(NEW_LINE);
+
             writeSummary(writer, report);
             writer.write(NEW_LINE);
+
             writePayments(writer, report);
+
             writer.flush();
+
             return outputStream.toByteArray();
 
         } catch (IOException e) {
@@ -81,6 +86,7 @@ public class FinancialReportCsvGenerator {
         writer.write(formatDate(report.startDate()));
         writer.write(" - ");
         writer.write(formatDate(report.endDate()));
+        writer.write(NEW_LINE);
     }
 
     private void writeSummary(
@@ -91,19 +97,25 @@ public class FinancialReportCsvGenerator {
         writer.write("Resumen del período");
         writer.write(NEW_LINE);
 
-        for (FinancialReportMetricResult metric :
-                report.metrics().entrySet().stream()
-                        .map(entry ->
-                                new FinancialReportMetricResult(
-                                        entry.getKey(),
-                                        entry.getValue()
-                                )
-                        )
-                        .toList()) {
+        for (var entry : report.metrics().entrySet()) {
 
-            writer.write(getMetricLabel(metric));
+            writer.write(
+                    escapeCsv(
+                            getMetricLabel(entry.getKey())
+                    )
+            );
+
             writer.write(",");
-            writer.write(formatMetricValue(metric));
+
+            writer.write(
+                    escapeCsv(
+                            formatMetricValue(
+                                    entry.getKey(),
+                                    entry.getValue()
+                            )
+                    )
+            );
+
             writer.write(NEW_LINE);
         }
     }
@@ -122,10 +134,15 @@ public class FinancialReportCsvGenerator {
 
         writer.write(NEW_LINE);
 
-        for (FinancialReportItem item : report.reservations()) {
+        for (FinancialReportItem item :
+                report.reservations()) {
 
             writer.write(
-                    escapeCsv(String.valueOf(item.reservationId()))
+                    escapeCsv(
+                            String.valueOf(
+                                    item.reservationId()
+                            )
+                    )
             );
             writer.write(",");
 
@@ -155,7 +172,9 @@ public class FinancialReportCsvGenerator {
             writer.write(",");
 
             writer.write(
-                    formatPaymentStatus(item.paymentStatus())
+                    formatPaymentStatus(
+                            item.paymentStatus()
+                    )
             );
             writer.write(",");
 
@@ -168,10 +187,10 @@ public class FinancialReportCsvGenerator {
     }
 
     private String getMetricLabel(
-            FinancialReportMetricResult metric
+            FinancialReportMetric metric
     ) {
 
-        return switch (metric.name()) {
+        return switch (metric) {
 
             case TOTAL_REVENUE ->
                     "Ingresos totales";
@@ -188,41 +207,45 @@ public class FinancialReportCsvGenerator {
     }
 
     private String formatMetricValue(
-            FinancialReportMetricResult metric
+            FinancialReportMetric metric,
+            Object value
     ) {
 
-        return switch (metric.name()) {
+        return switch (metric) {
 
             case TOTAL_REVENUE,
                  AVERAGE_RESERVATION ->
                     formatCurrency(
-                            (BigDecimal) metric.value()
+                            (BigDecimal) value
                     );
 
             case TOTAL_RESERVATIONS,
                  SUCCESSFUL_PAYMENTS ->
-                    String.valueOf(metric.value());
+                    String.valueOf(value);
         };
     }
 
-    private String formatDate(
-            java.time.LocalDate date
-    ) {
+    private String formatDate(LocalDate date) {
+
         return date.format(DATE_FORMATTER);
     }
 
-    private String formatDateTime(
-            Instant instant
-    ) {
+    private String formatDateTime(Instant instant) {
+
+        if (instant == null) {
+            return "";
+        }
 
         return instant
                 .atZone(ZONE_ID)
                 .format(DATE_TIME_FORMATTER);
     }
 
-    private String formatCurrency(
-            BigDecimal amount
-    ) {
+    private String formatCurrency(BigDecimal amount) {
+
+        if (amount == null) {
+            return "0.00";
+        }
 
         return String.format(
                 Locale.US,
@@ -234,6 +257,10 @@ public class FinancialReportCsvGenerator {
     private String formatPaymentStatus(
             PaymentStatus status
     ) {
+
+        if (status == null) {
+            return "";
+        }
 
         return switch (status) {
 
@@ -256,9 +283,9 @@ public class FinancialReportCsvGenerator {
                 || value.contains("\n")
                 || value.contains("\r")) {
 
-            return "\"" +
-                    value.replace("\"", "\"\"") +
-                    "\"";
+            return "\""
+                    + value.replace("\"", "\"\"")
+                    + "\"";
         }
 
         return value;
