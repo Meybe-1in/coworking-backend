@@ -64,7 +64,6 @@ public class AdminReportController {
     }
 
 
-
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                 GET FINANCIAL REPORTS ENDPOINTS
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -75,6 +74,38 @@ public class AdminReportController {
         return ResponseEntity.ok(
                 financialReportService.getFinancialReport(request)
         );
+    }
+
+    // Generate financial report in PDF
+    @PostMapping(
+            value = "/financial/pdf",
+            produces = "application/pdf"
+    )
+    public ResponseEntity<byte[]> generateFinancialReportPdf(@Valid @RequestBody FinancialReportRequest request) {
+        byte[] pdf = financialReportService.generateFinancialReportPdf(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=financial-report.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // Generate financial report in CSV
+    @PostMapping(
+            value = "/financial/csv",
+            produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> generateFinancialReportCsv(@Valid @RequestBody FinancialReportRequest request) {
+        byte[] csv = financialReportService.generateFinancialReportCsv(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=financial-report.csv"
+                )
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
     }
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                  GET ROOM USAGE REPORTS ENDPOINTS

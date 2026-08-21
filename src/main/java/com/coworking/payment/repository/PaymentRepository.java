@@ -104,4 +104,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("end") Instant end
     );
 
+    @Query("""
+        SELECT p
+        FROM Payment p
+        JOIN FETCH p.reservation r
+        JOIN FETCH r.user
+        JOIN FETCH r.room
+        WHERE p.status = :status
+        AND p.paidAt >= :start
+        AND p.paidAt < :end
+        ORDER BY p.paidAt ASC
+        """)
+    List<Payment> findSuccessfulPaymentsByPeriod(
+            @Param("status") PaymentStatus status,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
 }

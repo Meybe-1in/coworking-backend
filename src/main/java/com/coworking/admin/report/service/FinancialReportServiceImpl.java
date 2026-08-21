@@ -3,10 +3,10 @@ package com.coworking.admin.report.service;
 import com.coworking.admin.report.dto.financial.FinancialReportRequest;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.enums.financial.FinancialReportMetric;
+import com.coworking.admin.report.generator.financial.FinancialReportCsvGenerator;
+import com.coworking.admin.report.generator.financial.FinancialReportPdfGenerator;
 import com.coworking.payment.enums.PaymentStatus;
-import com.coworking.payment.model.Payment;
 import com.coworking.payment.repository.PaymentRepository;
-import com.coworking.reservation.model.Reservation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -24,6 +23,8 @@ import java.util.Map;
 public class FinancialReportServiceImpl implements FinancialReportService {
 
     private final PaymentRepository paymentRepository;
+    private final FinancialReportPdfGenerator financialReportPdfGenerator;
+    private final FinancialReportCsvGenerator financialReportCsvGenerator;
 
     private static final ZoneId ZONE_ID = ZoneId.of("America/El_Salvador");
 
@@ -146,5 +147,31 @@ public class FinancialReportServiceImpl implements FinancialReportService {
                     "La fecha de inicio no puede ser posterior a la fecha de fin"
             );
         }
+    }
+
+    @Override
+    public byte[] generateFinancialReportPdf(
+            FinancialReportRequest request
+    ) {
+
+        FinancialReportResponse report =
+                getFinancialReport(request);
+
+        return financialReportPdfGenerator.generatePdf(
+                report
+        );
+    }
+
+    @Override
+    public byte[] generateFinancialReportCsv(
+            FinancialReportRequest request
+    ) {
+
+        FinancialReportResponse report =
+                getFinancialReport(request);
+
+        return financialReportCsvGenerator.generateCsv(
+                report
+        );
     }
 }

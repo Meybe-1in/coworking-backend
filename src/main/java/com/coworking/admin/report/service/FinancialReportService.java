@@ -12,4 +12,12 @@ public interface FinancialReportService {
     FinancialReportResponse getFinancialReport(
             FinancialReportRequest request
     );
+
+    byte[] generateFinancialReportPdf(
+            FinancialReportRequest request
+    );
+
+    byte[] generateFinancialReportCsv(
+            FinancialReportRequest request
+    );
 }
