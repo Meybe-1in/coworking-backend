@@ -1,10 +1,12 @@
 package com.coworking.admin.report.controller;
 
-import com.coworking.admin.report.dto.FinancialReportResponse;
+import com.coworking.admin.report.dto.financial.FinancialReportRequest;
+import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.dto.RoomUsageReportResponse;
 import com.coworking.admin.report.service.AdminReportService;
+import com.coworking.admin.report.service.FinancialReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminReportController {
 
     private final AdminReportService adminReportService;
+    private final FinancialReportService financialReportService;
 
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                    GET REPORTS ENDPOINTS
@@ -61,16 +64,49 @@ public class AdminReportController {
     }
 
 
-
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                 GET FINANCIAL REPORTS ENDPOINTS
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
-    @GetMapping("/financial")
-    public FinancialReportResponse getFinancialReport() {
-        return adminReportService.getFinancialReport();
+    @PostMapping("/financial")
+    public ResponseEntity<FinancialReportResponse> getFinancialReport(
+            @Valid @RequestBody FinancialReportRequest request) {
+        return ResponseEntity.ok(
+                financialReportService.getFinancialReport(request)
+        );
     }
 
+    // Generate financial report in PDF
+    @PostMapping(
+            value = "/financial/pdf",
+            produces = "application/pdf"
+    )
+    public ResponseEntity<byte[]> generateFinancialReportPdf(@Valid @RequestBody FinancialReportRequest request) {
+        byte[] pdf = financialReportService.generateFinancialReportPdf(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=financial-report.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // Generate financial report in CSV
+    @PostMapping(
+            value = "/financial/csv",
+            produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> generateFinancialReportCsv(@Valid @RequestBody FinancialReportRequest request) {
+        byte[] csv = financialReportService.generateFinancialReportCsv(request);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=financial-report.csv"
+                )
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                  GET ROOM USAGE REPORTS ENDPOINTS
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
