@@ -4,8 +4,11 @@ import com.coworking.admin.report.dto.financial.FinancialReportRequest;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
+import com.coworking.admin.report.dto.room.RoomUsageReportRequest;
+import com.coworking.admin.report.dto.room.RoomUsageReportResponse;
 import com.coworking.admin.report.service.FinancialReportService;
 import com.coworking.admin.report.service.ReservationReportService;
+import com.coworking.admin.report.service.RoomReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +23,7 @@ public class AdminReportController {
 
     private final FinancialReportService financialReportService;
     private final ReservationReportService reservationReportService;
+    private final RoomReportService roomReportService;
 
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                    GET REPORTS ENDPOINTS
@@ -106,4 +110,19 @@ public class AdminReportController {
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(csv);
     }
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                 GET ROOM USAGE REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+    @PostMapping("/room-usage")
+    public ResponseEntity<RoomUsageReportResponse> getRoomUsageReport(
+            @Valid @RequestBody RoomUsageReportRequest request
+    ) {
+        return ResponseEntity.ok(
+                roomReportService.getRoomUsageReport(request)
+        );
+    }
+
+
 }
