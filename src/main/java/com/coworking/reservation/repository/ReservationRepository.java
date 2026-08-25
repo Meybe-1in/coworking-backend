@@ -100,4 +100,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("endAt") Instant endAt
     );
 
+
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            JOIN FETCH r.room
+            WHERE r.status = :status
+              AND r.startAt < :endDateTime
+              AND r.endAt > :startDateTime
+            ORDER BY r.room.name ASC, r.startAt ASC
+            """)
+    List<Reservation> findPaidReservationsForRoomUsageReport(
+            @Param("status") ReservationStatus status,
+            @Param("startDateTime") Instant startDateTime,
+            @Param("endDateTime") Instant endDateTime
+    );
 }

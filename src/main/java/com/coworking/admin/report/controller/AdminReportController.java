@@ -4,8 +4,11 @@ import com.coworking.admin.report.dto.financial.FinancialReportRequest;
 import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.dto.reservation.ReservationReportRequest;
 import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
+import com.coworking.admin.report.dto.room.RoomUsageReportRequest;
+import com.coworking.admin.report.dto.room.RoomUsageReportResponse;
 import com.coworking.admin.report.service.FinancialReportService;
 import com.coworking.admin.report.service.ReservationReportService;
+import com.coworking.admin.report.service.RoomReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +23,7 @@ public class AdminReportController {
 
     private final FinancialReportService financialReportService;
     private final ReservationReportService reservationReportService;
+    private final RoomReportService roomReportService;
 
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     //                    GET REPORTS ENDPOINTS
@@ -106,4 +110,55 @@ public class AdminReportController {
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(csv);
     }
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    //                 GET ROOM USAGE REPORTS ENDPOINTS
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+    @PostMapping("/room-usage")
+    public ResponseEntity<RoomUsageReportResponse> getRoomUsageReport(
+            @Valid @RequestBody RoomUsageReportRequest request
+    ) {
+        return ResponseEntity.ok(
+                roomReportService.getRoomUsageReport(request)
+        );
+    }
+
+    // Generate room usage report in PDF
+    @PostMapping(
+            value = "/room-usage/pdf",
+            produces = "application/pdf"
+    )
+    public ResponseEntity<byte[]> generateRoomUsageReportPdf(@Valid @RequestBody RoomUsageReportRequest request) {
+
+        byte[] pdf = roomReportService.generateRoomUsageReportPdf(request);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=room-usage-report.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // Generate room usage report in CSV
+    @PostMapping(
+            value = "/room-usage/csv",
+            produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> generateRoomUsageReportCsv(@Valid @RequestBody RoomUsageReportRequest request) {
+
+        byte[] csv = roomReportService.generateRoomUsageReportCsv(request);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=room-usage-report.csv"
+                )
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+
 }
