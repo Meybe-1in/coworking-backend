@@ -134,13 +134,21 @@ public class RoomUsageReportCsvGenerator {
             writer.write(",");
 
             writer.write(
-                    String.valueOf(room.reservedHours())
+                    String.format(
+                            Locale.US,
+                            "%.2f",
+                            room.reservedHours()
+                    )
             );
 
             writer.write(",");
 
             writer.write(
-                    String.valueOf(room.occupancyPercentage())
+                    String.format(
+                            Locale.US,
+                            "%.2f",
+                            room.occupancyPercentage()
+                    )
             );
 
             writer.write(NEW_LINE);
