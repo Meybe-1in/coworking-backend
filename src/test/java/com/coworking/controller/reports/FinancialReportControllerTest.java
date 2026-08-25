@@ -5,6 +5,7 @@ import com.coworking.admin.report.dto.financial.FinancialReportResponse;
 import com.coworking.admin.report.enums.financial.FinancialReportMetric;
 import com.coworking.admin.report.service.FinancialReportService;
 import com.coworking.admin.report.service.ReservationReportService;
+import com.coworking.admin.report.service.RoomReportService;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class FinancialReportControllerTest {
 
     @MockitoBean
     private ReservationReportService reservationReportService;
+
+    @MockitoBean
+    private RoomReportService roomReportService;
 
 
     @MockitoBean

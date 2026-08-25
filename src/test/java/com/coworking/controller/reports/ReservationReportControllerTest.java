@@ -7,6 +7,7 @@ import com.coworking.admin.report.dto.reservation.ReservationReportResponse;
 import com.coworking.admin.report.enums.reservation.ReservationReportMetric;
 import com.coworking.admin.report.service.FinancialReportService;
 import com.coworking.admin.report.service.ReservationReportService;
+import com.coworking.admin.report.service.RoomReportService;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
@@ -41,6 +42,9 @@ class ReservationReportControllerTest {
 
     @MockitoBean
     private ReservationReportService reservationReportService;
+
+    @MockitoBean
+    private RoomReportService roomReportService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
