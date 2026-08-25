@@ -124,5 +124,41 @@ public class AdminReportController {
         );
     }
 
+    // Generate room usage report in PDF
+    @PostMapping(
+            value = "/room-usage/pdf",
+            produces = "application/pdf"
+    )
+    public ResponseEntity<byte[]> generateRoomUsageReportPdf(@Valid @RequestBody RoomUsageReportRequest request) {
+
+        byte[] pdf = roomReportService.generateRoomUsageReportPdf(request);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=room-usage-report.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // Generate room usage report in CSV
+    @PostMapping(
+            value = "/room-usage/csv",
+            produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> generateRoomUsageReportCsv(@Valid @RequestBody RoomUsageReportRequest request) {
+
+        byte[] csv = roomReportService.generateRoomUsageReportCsv(request);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=room-usage-report.csv"
+                )
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
 
 }
