@@ -1,4 +1,4 @@
-package com.coworking.generator;
+package com.coworking.generator.reservation;
 
 import com.coworking.admin.report.dto.reservation.ReservationReportItem;
 import com.coworking.admin.report.dto.reservation.ReservationReportMetricResult;
