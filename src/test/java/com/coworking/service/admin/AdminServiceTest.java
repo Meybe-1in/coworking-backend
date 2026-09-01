@@ -1,7 +1,6 @@
 package com.coworking.service.admin;
 
 import com.coworking.admin.dto.*;
-import com.coworking.admin.enums.ChartPeriod;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
@@ -28,11 +27,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -767,5 +762,425 @@ class AdminServiceTest {
                 "No puedes remover tus propios privilegios administrativos",
                 exception.getMessage()
         );
+    }
+
+    // editar usuario
+
+    @Test
+    void shouldUpdateUserSuccessfully() {
+
+        Role currentRole = new Role();
+        currentRole.setName("ROLE_USER");
+
+        Role newRole = new Role();
+        newRole.setName("ROLE_ADMIN");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(new HashSet<>(Set.of(currentRole)));
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+        user.setCreatedAt(LocalDateTime.now());
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "dayanaUpdated",
+                "dayana.updated@test.com",
+                "ROLE_ADMIN"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "dayanaUpdated",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "dayana.updated@test.com",
+                1L
+        )).thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.of(newRole));
+
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+
+        mockAuthenticatedUser(currentAdmin);
+
+        when(userRepository.save(user))
+                .thenReturn(user);
+
+        UserAdminResponse response =
+                adminService.updateUser(1L, request);
+
+        assertEquals(
+                "dayanaUpdated",
+                response.getUsername()
+        );
+
+        assertEquals(
+                "dayana.updated@test.com",
+                response.getEmail()
+        );
+
+        assertTrue(
+                response.getRoles().contains("ROLE_ADMIN")
+        );
+
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUserWithDuplicateUsername() {
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(new HashSet<>(Set.of(role)));
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "admin",
+                "dayana@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "admin",
+                1L
+        )).thenReturn(true);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "El nombre de usuario ya existe",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUserWithDuplicateEmail() {
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(new HashSet<>(Set.of(role)));
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "dayanaUpdated",
+                "admin@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "dayanaUpdated",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "admin@test.com",
+                1L
+        )).thenReturn(true);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "El correo ya está registrado",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUserAndUserNotFound() {
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "dayanaUpdated",
+                "dayana.updated@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "Usuario no encontrado",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .existsByUsernameAndIdNot(any(), anyLong());
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUserAndRoleDoesNotExist() {
+
+        Role currentRole = new Role();
+        currentRole.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(new HashSet<>(Set.of(currentRole)));
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "dayanaUpdated",
+                "dayana.updated@test.com",
+                "ROLE_ADMIN"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "dayanaUpdated",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "dayana.updated@test.com",
+                1L
+        )).thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_ADMIN"))
+                .thenReturn(Optional.empty());
+
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "Rol no encontrado",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUserAndRemovingLastAdmin() {
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setEmail("admin@test.com");
+        admin.setRoles(new HashSet<>(Set.of(adminRole)));
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "adminUpdated",
+                "admin.updated@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "adminUpdated",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "admin.updated@test.com",
+                1L
+        )).thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(userRole));
+
+        when(userRepository.countByRoles_Name("ROLE_ADMIN"))
+                .thenReturn(1L);
+
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("other-admin@test.com");
+
+        mockAuthenticatedUser(currentAdmin);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "No se puede remover el último administrador",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenAdminRemovesOwnPrivilegesWhileUpdatingUser() {
+
+        Role adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setEmail("admin@test.com");
+        admin.setRoles(new HashSet<>(Set.of(adminRole)));
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "adminUpdated",
+                "admin.updated@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "adminUpdated",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "admin.updated@test.com",
+                1L
+        )).thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(userRole));
+
+        when(userRepository.countByRoles_Name("ROLE_ADMIN"))
+                .thenReturn(2L);
+
+        mockAuthenticatedUser(admin);
+
+        BadRequestException exception =
+                assertThrows(
+                        BadRequestException.class,
+                        () -> adminService.updateUser(1L, request)
+                );
+
+        assertEquals(
+                "No puedes remover tus propios privilegios administrativos",
+                exception.getMessage()
+        );
+
+        verify(userRepository, never())
+                .save(any(User.class));
+    }
+
+    @Test
+    void shouldAllowUpdatingUserWithSameUsernameAndEmail() {
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("dayana");
+        user.setEmail("dayana@test.com");
+        user.setRoles(new HashSet<>(Set.of(role)));
+        user.setEnabled(true);
+        user.setEmailVerified(true);
+
+        UpdateUserRequest request = new UpdateUserRequest(
+                "dayana",
+                "dayana@test.com",
+                "ROLE_USER"
+        );
+
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(userRepository.existsByUsernameAndIdNot(
+                "dayana",
+                1L
+        )).thenReturn(false);
+
+        when(userRepository.existsByEmailAndIdNot(
+                "dayana@test.com",
+                1L
+        )).thenReturn(false);
+
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(role));
+
+        User currentAdmin = new User();
+        currentAdmin.setId(99L);
+        currentAdmin.setEmail("admin@test.com");
+
+        mockAuthenticatedUser(currentAdmin);
+
+        when(userRepository.save(user))
+                .thenReturn(user);
+
+        UserAdminResponse response =
+                adminService.updateUser(1L, request);
+
+        assertEquals(
+                "dayana",
+                response.getUsername()
+        );
+
+        assertEquals(
+                "dayana@test.com",
+                response.getEmail()
+        );
+
+        assertTrue(
+                response.getRoles().contains("ROLE_USER")
+        );
+
+        verify(userRepository).save(user);
     }
 }
