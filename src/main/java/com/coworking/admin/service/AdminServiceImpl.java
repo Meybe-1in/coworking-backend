@@ -258,7 +258,7 @@ public class AdminServiceImpl implements AdminService {
         }
         //validar email duplicado
         if (userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
-            throw new BadRequestException("El correo ya existe");
+            throw new BadRequestException("El correo ya está registrado");
         }
         //buscar nuevo rol
         Role newRole = roleRepository.findByName(request.getRole())
