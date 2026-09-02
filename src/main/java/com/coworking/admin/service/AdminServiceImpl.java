@@ -244,6 +244,86 @@ public class AdminServiceImpl implements AdminService {
 
     }
 
+    @Override
+    @Transactional
+    public UserAdminResponse updateUser(Long userId, UpdateUserRequest request) {
+        //buscar usuarios
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario no encontrado")
+                );
+        //validar username duplicado
+        if (userRepository.existsByUsernameAndIdNot(request.getUsername(), userId)) {
+            throw new BadRequestException("El nombre de usuario ya existe");
+        }
+        //validar email duplicado
+        if (userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
+            throw new BadRequestException("El correo ya está registrado");
+        }
+        //buscar nuevo rol
+        Role newRole = roleRepository.findByName(request.getRole())
+                .orElseThrow(() ->
+                        new NotFoundException("Rol no encontrado")
+                );
+        //obtener rol actual
+        Role currentRole = user.getRoles()
+                .stream()
+                .findFirst()
+                .orElseThrow(() ->
+                        new BadRequestException(
+                                "Usuario sin rol asignado"
+                        )
+                );
+
+        //obtener administrador autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() ->
+                        new NotFoundException("Usuario autenticado no encontrado")
+                );
+        // Proteger al último administrador
+        if (
+                currentRole.getName().equals("ROLE_ADMIN")
+                        && newRole.getName().equals("ROLE_USER")
+        ) {
+
+            long admins =
+                    userRepository.countByRoles_Name("ROLE_ADMIN");
+
+            if (admins == 1) {
+                throw new BadRequestException(
+                        "No se puede remover el último administrador"
+                );
+            }
+        }
+
+        // Un administrador no puede quitarse sus propios privilegios
+        if (
+                currentUser.getId().equals(user.getId())
+                        && currentRole.getName().equals("ROLE_ADMIN")
+                        && newRole.getName().equals("ROLE_USER")
+        ) {
+            throw new BadRequestException(
+                    "No puedes remover tus propios privilegios administrativos"
+            );
+        }
+
+        // Actualizar username
+        user.setUsername(request.getUsername());
+
+        // Actualizar email
+        user.setEmail(request.getEmail());
+
+        // Actualizar rol
+        user.getRoles().clear();
+        user.getRoles().add(newRole);
+
+        User updatedUser = userRepository.save(user);
+
+        return mapToUserAdminResponse(updatedUser);
+    }
+
     //Usuario para perfil autenticado
     @Override
     public AdminProfileResponse getProfile() {

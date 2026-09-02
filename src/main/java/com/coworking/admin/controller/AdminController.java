@@ -123,6 +123,25 @@ public class AdminController {
         );
     }
 
+    //                         Update User
+// . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+// Permite a un administrador editar información básica de un usuario
+    @PutMapping("/users/{id}")
+    @Operation(summary = "Editar usuario", description = "Permite modificar el nombre de usuario, correo electrónico y rol")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Usuario actualizado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario duplicado"),
+            @ApiResponse(responseCode = "404", description = "Usuario o rol no encontrado")
+    })
+    public ResponseEntity<UserAdminResponse> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request
+    ) {
+        return ResponseEntity.ok(
+                adminService.updateUser(id, request)
+        );
+    }
+
     //                         Get Profile
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     // Perfil autenticado

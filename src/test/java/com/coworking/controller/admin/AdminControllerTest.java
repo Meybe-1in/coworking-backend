@@ -305,5 +305,137 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.roles[0]")
                         .value("ROLE_ADMIN"));
     }
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldUpdateUser() throws Exception {
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "dayanaUpdated",
+                        "dayana.updated@test.com",
+                        "ROLE_USER"
+                );
+
+        UserAdminResponse response =
+                new UserAdminResponse(
+                        1L,
+                        "dayanaUpdated",
+                        "dayana.updated@test.com",
+                        Set.of("ROLE_USER"),
+                        true,
+                        true,
+                        LocalDateTime.now()
+                );
+
+        when(adminService.updateUser(
+                eq(1L),
+                any(UpdateUserRequest.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username")
+                        .value("dayanaUpdated"))
+                .andExpect(jsonPath("$.email")
+                        .value("dayana.updated@test.com"))
+                .andExpect(jsonPath("$.roles[0]")
+                        .value("ROLE_USER"));
+
+        verify(adminService).updateUser(
+                eq(1L),
+                any(UpdateUserRequest.class)
+        );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldRejectUpdateUserWithBlankUsername() throws Exception {
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "",
+                        "dayana@test.com",
+                        "ROLE_USER"
+                );
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never())
+                .updateUser(
+                        anyLong(),
+                        any(UpdateUserRequest.class)
+                );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldRejectUpdateUserWithInvalidEmail() throws Exception {
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "dayanaUpdated",
+                        "correo-invalido",
+                        "ROLE_USER"
+                );
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never())
+                .updateUser(
+                        anyLong(),
+                        any(UpdateUserRequest.class)
+                );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldRejectUpdateUserWithBlankRole() throws Exception {
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "dayanaUpdated",
+                        "dayana.updated@test.com",
+                        ""
+                );
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(adminService, never())
+                .updateUser(
+                        anyLong(),
+                        any(UpdateUserRequest.class)
+                );
+    }
 
 }

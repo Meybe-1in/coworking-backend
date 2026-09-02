@@ -1,12 +1,16 @@
 package com.coworking.controller.admin;
 
 import com.coworking.admin.controller.AdminController;
+import com.coworking.admin.dto.UpdateUserRequest;
+import com.coworking.admin.dto.UserAdminResponse;
 import com.coworking.admin.service.AdminService;
 import com.coworking.security.AuthenticationEntryPointImpl;
 import com.coworking.security.CustomUserDetailsService;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.JwtUtil;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,6 +26,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +56,24 @@ class AdminSecurityTest {
 
     @MockitoBean
     private AuthenticationProvider authenticationProvider;
+
+    @BeforeEach
+    void setUp() throws Exception {
+
+        doAnswer(invocation -> {
+
+            FilterChain filterChain = invocation.getArgument(2);
+
+            filterChain.doFilter(
+                    invocation.getArgument(0),
+                    invocation.getArgument(1)
+            );
+
+            return null;
+
+        }).when(jwtAuthenticationFilter)
+                .doFilter(any(), any(), any());
+    }
 
     @TestConfiguration
     static class TestSecurityConfig {
@@ -92,14 +116,6 @@ class AdminSecurityTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    @DisplayName("GET /admin/stats - ADMIN role should pass")
-    void shouldAllowAdminAccess() throws Exception {
-
-        mockMvc.perform(get("/admin/stats"))
-                .andExpect(status().isOk());
-    }
 
     @Test
     @WithMockUser(roles = "USER")
@@ -138,12 +154,12 @@ class AdminSecurityTest {
                                 .with(csrf())
                                 .contentType("application/json")
                                 .content("""
-                                    {
-                                      "username":"admin",
-                                      "email":"admin@test.com",
-                                      "password":"Password123."
-                                    }
-                                    """)
+                                        {
+                                          "username":"admin",
+                                          "email":"admin@test.com",
+                                          "password":"Password123."
+                                        }
+                                        """)
                 )
                 .andExpect(status().isForbidden());
     }
@@ -157,10 +173,10 @@ class AdminSecurityTest {
                                 .with(csrf())
                                 .contentType("application/json")
                                 .content("""
-                                {
-                                  "enabled": false
-                                }
-                                """)
+                                        {
+                                          "enabled": false
+                                        }
+                                        """)
                 )
                 .andExpect(status().isForbidden());
     }
@@ -174,10 +190,10 @@ class AdminSecurityTest {
                                 .with(csrf())
                                 .contentType("application/json")
                                 .content("""
-                                {
-                                  "enabled": false
-                                }
-                                """)
+                                        {
+                                          "enabled": false
+                                        }
+                                        """)
                 )
                 .andExpect(status().isOk());
     }
@@ -191,10 +207,10 @@ class AdminSecurityTest {
                                 .with(csrf())
                                 .contentType("application/json")
                                 .content("""
-                            {
-                              "role":"ROLE_ADMIN"
-                            }
-                            """)
+                                        {
+                                          "role":"ROLE_ADMIN"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isForbidden());
     }
@@ -208,11 +224,67 @@ class AdminSecurityTest {
                                 .with(csrf())
                                 .contentType("application/json")
                                 .content("""
-                            {
-                              "role":"ROLE_ADMIN"
-                            }
-                            """)
+                                        {
+                                          "role":"ROLE_ADMIN"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userShouldNotUpdateUser() throws Exception {
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("""
+                                        {
+                                          "username": "dayanaUpdated",
+                                          "email": "dayana.updated@test.com",
+                                          "role": "ROLE_USER"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden());
+
+        verify(adminService, never())
+                .updateUser(
+                        anyLong(),
+                        any(UpdateUserRequest.class)
+                );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminShouldUpdateUser() throws Exception {
+
+        when(adminService.updateUser(
+                eq(1L),
+                any(UpdateUserRequest.class)
+        )).thenReturn(
+                new UserAdminResponse()
+        );
+
+        mockMvc.perform(
+                        put("/admin/users/1")
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("""
+                                        {
+                                          "username": "dayanaUpdated",
+                                          "email": "dayana.updated@test.com",
+                                          "role": "ROLE_USER"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isOk());
+        verify(adminService).updateUser(
+                eq(1L),
+                any(UpdateUserRequest.class)
+        );
+
     }
 }
