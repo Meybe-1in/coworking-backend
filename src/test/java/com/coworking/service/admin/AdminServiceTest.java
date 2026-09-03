@@ -787,7 +787,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "dayanaUpdated",
                 "dayana.updated@test.com",
-                "ROLE_ADMIN"
+                "ADMIN"
         );
 
         when(userRepository.findById(1L))
@@ -850,7 +850,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "admin",
                 "dayana@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
@@ -891,7 +891,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "dayanaUpdated",
                 "admin@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
@@ -928,7 +928,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "dayanaUpdated",
                 "dayana.updated@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
@@ -967,7 +967,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "dayanaUpdated",
                 "dayana.updated@test.com",
-                "ROLE_ADMIN"
+                "ADMIN"
         );
 
         when(userRepository.findById(1L))
@@ -1019,7 +1019,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "adminUpdated",
                 "admin.updated@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
@@ -1080,7 +1080,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "adminUpdated",
                 "admin.updated@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
@@ -1136,7 +1136,7 @@ class AdminServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(
                 "dayana",
                 "dayana@test.com",
-                "ROLE_USER"
+                "USER"
         );
 
         when(userRepository.findById(1L))
