@@ -261,7 +261,8 @@ public class AdminServiceImpl implements AdminService {
             throw new BadRequestException("El correo ya está registrado");
         }
         //buscar nuevo rol
-        Role newRole = roleRepository.findByName(request.getRole())
+        String roleName = "ROLE_" + request.getRole();
+        Role newRole = roleRepository.findByName(roleName)
                 .orElseThrow(() ->
                         new NotFoundException("Rol no encontrado")
                 );
