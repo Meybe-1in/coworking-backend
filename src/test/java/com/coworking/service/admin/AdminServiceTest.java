@@ -1,5 +1,7 @@
 package com.coworking.service.admin;
 
+import com.coworking.admin.audit.enums.AuditAction;
+import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.*;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
@@ -26,6 +28,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -60,6 +67,9 @@ class AdminServiceTest {
 
     @InjectMocks
     private AdminServiceImpl adminService;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -351,6 +361,12 @@ class AdminServiceTest {
         assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(user);
+
+        verify(auditLogService).log(
+                AuditAction.USER_ACTIVATED,
+                "User",
+                1L
+        );
     }
 
     @Test
@@ -385,6 +401,12 @@ class AdminServiceTest {
         assertTrue(response.isEmailVerified());
 
         verify(userRepository).save(user);
+
+        verify(auditLogService).log(
+                AuditAction.USER_DEACTIVATED,
+                "User",
+                1L
+        );
     }
 
     @Test
@@ -404,6 +426,11 @@ class AdminServiceTest {
                                 request
                         )
                 );
+        verify(auditLogService, never()).log(
+                any(AuditAction.class),
+                anyString(),
+                anyLong()
+        );
 
         assertEquals(
                 "Usuario no encontrado",
@@ -432,44 +459,16 @@ class AdminServiceTest {
                         )
                 );
 
+        verify(auditLogService, never()).log(
+                any(AuditAction.class),
+                anyString(),
+                anyLong()
+        );
+
         assertEquals(
                 "El estado del usuario debe ser true o false",
                 exception.getMessage()
         );
-    }
-
-    @Test
-    void shouldDisableUserWithoutChangingEmailVerification() {
-
-        Role role = new Role();
-        role.setName("ROLE_USER");
-
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("dayana");
-        user.setEmail("dayana@test.com");
-        user.setEnabled(true);
-        user.setEmailVerified(true);
-        user.setRoles(Set.of(role));
-
-        UpdateUserStatusRequest request =
-                new UpdateUserStatusRequest(false);
-
-        when(userRepository.findById(1L))
-                .thenReturn(Optional.of(user));
-
-        User currentAdmin = new User();
-        currentAdmin.setId(99L);
-        currentAdmin.setEmail("admin@test.com");
-        mockAuthenticatedUser(currentAdmin);
-
-        UserAdminResponse response =
-                adminService.updateUserStatus(1L, request);
-
-        assertFalse(response.isEnabled());
-        assertTrue(response.isEmailVerified());
-
-        verify(userRepository).save(user);
     }
 
     //desactivar si es admin
@@ -512,6 +511,12 @@ class AdminServiceTest {
                                 request
                         )
                 );
+
+        verify(auditLogService, never()).log(
+                any(AuditAction.class),
+                anyString(),
+                anyLong()
+        );
 
         assertEquals(
                 "No puedes desactivar tu propia cuenta",
