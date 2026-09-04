@@ -104,6 +104,12 @@ public class AdminServiceImpl implements AdminService {
 
         reservationRepository.save(reservation);
 
+        auditLogService.log(
+                AuditAction.RESERVATION_CANCELLED,
+                "Reservation",
+                reservation.getId()
+        );
+
     }
 
     // Crear usuario admin

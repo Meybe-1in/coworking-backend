@@ -115,6 +115,33 @@ class AdminServiceTest {
         );
 
         verify(reservationRepository).save(reservation);
+
+        verify(auditLogService).log(
+                AuditAction.RESERVATION_CANCELLED,
+                "Reservation",
+                1L
+        );
+    }
+
+    @Test
+    void shouldThrowWhenCancelingNonExistingReservation() {
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                NotFoundException.class,
+                () -> adminService.cancelReservation(1L)
+        );
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+
+        verify(auditLogService, never()).log(
+                any(AuditAction.class),
+                anyString(),
+                anyLong()
+        );
     }
 
     //lista de usuarios
