@@ -1,5 +1,7 @@
 package com.coworking.room.service;
 
+import com.coworking.admin.audit.enums.AuditAction;
+import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.exception.RoomHasReservationsException;
 import com.coworking.room.dto.RoomAvailabilityResponse;
@@ -32,6 +34,7 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
     private final StorageService storageService;
+    private final AuditLogService auditLogService;
     // MAPPERS
 
     private RoomDto mapToDto(Room room) {
@@ -120,9 +123,18 @@ public class RoomService {
             room.setImageUrl(imageUrl);
         }
 
-        return mapToDto(roomRepository.save(room));
+        Room savedRoom = roomRepository.save(room);
+
+        auditLogService.log(
+                AuditAction.ROOM_CREATED,
+                "Room",
+                savedRoom.getId()
+        );
+
+        return mapToDto(savedRoom);
     }
 
+    @Transactional
     public Optional<RoomDto> updateRoom(Long id, RoomDto dto, MultipartFile image) {
 
         return roomRepository.findById(id).map(room -> {
@@ -140,7 +152,14 @@ public class RoomService {
                 room.setImageUrl(imageUrl);
             }
 
-            return mapToDto(roomRepository.save(room));
+            Room updateRoom = roomRepository.save(room);
+            auditLogService.log(
+                    AuditAction.ROOM_UPDATED,
+                    "Room",
+                    updateRoom.getId()
+            );
+
+            return mapToDto(updateRoom);
         });
     }
 
@@ -154,6 +173,11 @@ public class RoomService {
         try {
             roomRepository.deleteById(id);
             roomRepository.flush();
+            auditLogService.log(
+                    AuditAction.ROOM_DELETED,
+                    "Room",
+                    id
+            );
 
             return true;
         } catch (DataIntegrityViolationException ex) {

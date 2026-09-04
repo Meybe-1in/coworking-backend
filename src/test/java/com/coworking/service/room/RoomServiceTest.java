@@ -1,6 +1,10 @@
 package com.coworking.service.room;
 
+import com.coworking.admin.audit.enums.AuditAction;
+import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
+import com.coworking.exception.RoomHasReservationsException;
+import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +38,12 @@ class RoomServiceTest {
 
     @Mock
     private StorageService storageService;
+
+    @Mock
+    private ReservationRepository reservationRepository;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private RoomService roomService;
@@ -113,13 +124,14 @@ class RoomServiceTest {
 
     @Test
     void createRoom_withoutImage_savesAndReturnsDto() {
-        // Mock: Simula la entidad devuelta al guardar
+
         Room roomToReturn = new Room();
         roomToReturn.setId(2L);
         roomToReturn.setName(baseRoomDto.getName());
         roomToReturn.setPrice(baseRoomDto.getPrice());
 
-        when(roomRepository.save(any(Room.class))).thenReturn(roomToReturn);
+        when(roomRepository.save(any(Room.class)))
+                .thenReturn(roomToReturn);
 
         RoomDto result = roomService.createRoom(baseRoomDto, null);
 
@@ -128,33 +140,59 @@ class RoomServiceTest {
         assertEquals("Sala 1", result.getName());
         assertEquals(new BigDecimal("10.00"), result.getPrice());
         assertNull(result.getImageUrl());
-        // Verifica que NO se llamó al servicio de almacenamiento
-        verify(storageService, never()).upload(any(MultipartFile.class));
+
+        verify(storageService, never())
+                .upload(any(MultipartFile.class));
+
+        verify(auditLogService)
+                .log(
+                        AuditAction.ROOM_CREATED,
+                        "Room",
+                        2L
+                );
     }
 
     @Test
     void createRoom_withImage_savesImageAndReturnsDtoWithUrl() {
+
         MockMultipartFile mockImage = new MockMultipartFile(
                 "image",
                 "test.jpg",
                 "image/jpeg",
                 "test data".getBytes()
         );
+
         String expectedUrl = "/uploads/test-unique-id.jpg";
-        // Mock: El servicio de almacenamiento devuelve la URL
-        when(storageService.upload(mockImage)).thenReturn(expectedUrl);
-        // Mock: Simula la entidad devuelta al guardar
+
+        when(storageService.upload(mockImage))
+                .thenReturn(expectedUrl);
+
         Room roomSaved = new Room();
         roomSaved.setId(2L);
         roomSaved.setName(baseRoomDto.getName());
         roomSaved.setImageUrl(expectedUrl);
-        when(roomRepository.save(any(Room.class))).thenReturn(roomSaved);
-        // Llamada al método con la imagen
-        RoomDto result = roomService.createRoom(baseRoomDto, mockImage);
+
+        when(roomRepository.save(any(Room.class)))
+                .thenReturn(roomSaved);
+
+        RoomDto result =
+                roomService.createRoom(baseRoomDto, mockImage);
+
         assertNotNull(result);
         assertEquals(expectedUrl, result.getImageUrl());
-        // Verifica que SÍ se llamó al servicio de almacenamiento
-        verify(storageService, times(1)).upload(mockImage);
+
+        verify(storageService, times(1))
+                .upload(mockImage);
+
+        verify(roomRepository, times(1))
+                .save(any(Room.class));
+
+        verify(auditLogService)
+                .log(
+                        AuditAction.ROOM_CREATED,
+                        "Room",
+                        2L
+                );
     }
 
     @Test
@@ -176,22 +214,81 @@ class RoomServiceTest {
 
     @Test
     void deleteRoom_existingRoom_returnsTrue() {
-        when(roomRepository.existsById(1L)).thenReturn(true);
 
-        boolean deleted = roomService.deleteRoom(1L);
+        when(roomRepository.existsById(1L))
+                .thenReturn(true);
+
+        boolean deleted =
+                roomService.deleteRoom(1L);
 
         assertTrue(deleted);
-        verify(roomRepository, times(1)).deleteById(1L);
+
+        verify(roomRepository, times(1))
+                .deleteById(1L);
+
+        verify(roomRepository, times(1))
+                .flush();
+
+        verify(auditLogService)
+                .log(
+                        AuditAction.ROOM_DELETED,
+                        "Room",
+                        1L
+                );
     }
 
     @Test
     void deleteRoom_nonExistingRoom_returnsFalse() {
-        when(roomRepository.existsById(1L)).thenReturn(false);
 
-        boolean deleted = roomService.deleteRoom(1L);
+        when(roomRepository.existsById(1L))
+                .thenReturn(false);
+
+        boolean deleted =
+                roomService.deleteRoom(1L);
 
         assertFalse(deleted);
-        verify(roomRepository, never()).deleteById(anyLong());
+
+        verify(roomRepository, never())
+                .deleteById(anyLong());
+
+        verify(roomRepository, never())
+                .flush();
+
+        verify(auditLogService, never())
+                .log(
+                        any(AuditAction.class),
+                        anyString(),
+                        anyLong()
+                );
+    }
+
+    @Test
+    void deleteRoom_withReservations_doesNotCreateAuditLog() {
+
+        when(roomRepository.existsById(1L))
+                .thenReturn(true);
+
+        doThrow(new DataIntegrityViolationException("FK constraint"))
+                .when(roomRepository)
+                .flush();
+
+        assertThrows(
+                RoomHasReservationsException.class,
+                () -> roomService.deleteRoom(1L)
+        );
+
+        verify(roomRepository)
+                .deleteById(1L);
+
+        verify(roomRepository)
+                .flush();
+
+        verify(auditLogService, never())
+                .log(
+                        any(AuditAction.class),
+                        anyString(),
+                        anyLong()
+                );
     }
 
     @Test
@@ -237,43 +334,6 @@ class RoomServiceTest {
         verify(roomRepository, never()).save(any(Room.class));
     }
 
-    @Test
-    void createRoom_withoutImage_debeGuardarSala() {
-
-        Room roomSaved = new Room();
-        roomSaved.setId(1L);
-
-        when(roomRepository.save(any(Room.class)))
-                .thenReturn(roomSaved);
-
-        roomService.createRoom(baseRoomDto, null);
-
-        verify(roomRepository).save(any(Room.class));
-        verify(storageService, never()).upload(any());
-    }
-
-    @Test
-    void createRoom_withImage_debeGuardarSalaYSubirImagen() {
-
-        MockMultipartFile image = new MockMultipartFile(
-                "image",
-                "test.jpg",
-                "image/jpeg",
-                "contenido".getBytes()
-        );
-
-        when(storageService.upload(image))
-                .thenReturn("/uploads/test.jpg");
-
-        when(roomRepository.save(any(Room.class)))
-                .thenReturn(new Room());
-
-        roomService.createRoom(baseRoomDto, image);
-
-        verify(storageService).upload(image);
-        verify(roomRepository).save(any(Room.class));
-    }
-
     //update
     @Test
     void updateRoom_updatesExistingRoom_withoutImage() {
@@ -299,9 +359,20 @@ class RoomServiceTest {
         assertTrue(result.isPresent());
         assertEquals("Sala modificada", result.get().getName());
         assertEquals(15, result.get().getCapacity());
-        assertEquals(new BigDecimal("15.00"), result.get().getPrice());
+        assertEquals(
+                new BigDecimal("15.00"),
+                result.get().getPrice()
+        );
 
-        verify(storageService, never()).upload(any());
+        verify(storageService, never())
+                .upload(any());
+
+        verify(auditLogService)
+                .log(
+                        AuditAction.ROOM_UPDATED,
+                        "Room",
+                        1L
+                );
     }
 
     @Test
@@ -333,7 +404,15 @@ class RoomServiceTest {
                 result.get().getImageUrl()
         );
 
-        verify(storageService).upload(image);
+        verify(storageService)
+                .upload(image);
+
+        verify(auditLogService)
+                .log(
+                        AuditAction.ROOM_UPDATED,
+                        "Room",
+                        1L
+                );
     }
 
 }
