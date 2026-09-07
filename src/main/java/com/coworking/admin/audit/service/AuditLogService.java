@@ -18,4 +18,6 @@ public interface AuditLogService {
             int page,
             int size
     );
+
+    byte[] exportAuditLogsCsv(AuditLogRequest request);
 }

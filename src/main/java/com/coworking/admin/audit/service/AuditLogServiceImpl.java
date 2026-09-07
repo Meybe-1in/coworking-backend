@@ -21,9 +21,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,12 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     private static final ZoneId EL_SALVADOR_ZONE =
             ZoneId.of("America/El_Salvador");
+
+    private static final DateTimeFormatter CSV_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern(
+                    "dd/MM/yyyy HH:mm",
+                    Locale.forLanguageTag("es-SV")
+            );
 
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
@@ -91,6 +101,89 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .first(logs.isFirst())
                 .last(logs.isLast())
                 .build();
+    }
+
+    @Override
+    public byte[] exportAuditLogsCsv(AuditLogRequest request) {
+        validateDateRange(request);
+
+        Instant startDate = toStartOfDay(request.getStartDate());
+        Instant endDate = toStartOfNextDay(request.getEndDate());
+
+        String adminName = normalizeAdminName(request.getAdminName());
+
+        Specification<AuditLog> specification = AuditLogSpecifications
+                .hasAdminName(adminName)
+                .and(AuditLogSpecifications.createdAtFrom(startDate))
+                .and(AuditLogSpecifications.createdAtBefore(endDate));
+
+        List<AuditLog> logs = auditLogRepository.findAll(
+                specification,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        return generateCsv(logs);
+    }
+
+    private byte[] generateCsv(List<AuditLog> logs) {
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("ID,Administrador,Acción,Entidad,ID Entidad,Fecha")
+                .append("\n");
+
+        for (AuditLog log : logs) {
+
+            String createdAt = log.getCreatedAt()
+                    .atZone(EL_SALVADOR_ZONE)
+                    .format(CSV_DATE_FORMATTER);
+
+            csv.append(log.getId())
+                    .append(",")
+                    .append(escapeCsv(log.getAdmin().getUsername()))
+                    .append(",")
+                    .append(log.getAction())
+                    .append(",")
+                    .append(escapeCsv(log.getEntityType()))
+                    .append(",")
+                    .append(log.getEntityId())
+                    .append(",")
+                    .append(createdAt)
+                    .append("\n");
+        }
+
+        byte[] content = csv.toString()
+                .getBytes(StandardCharsets.UTF_8);
+
+        byte[] bom = new byte[]{
+                (byte) 0xEF,
+                (byte) 0xBB,
+                (byte) 0xBF
+        };
+
+        byte[] result = new byte[bom.length + content.length];
+
+        System.arraycopy(bom, 0, result, 0, bom.length);
+        System.arraycopy(content, 0, result, bom.length, content.length);
+
+        return result;
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value.contains(",")
+                || value.contains("\"")
+                || value.contains("\n")) {
+
+            return "\"" +
+                    value.replace("\"", "\"\"") +
+                    "\"";
+        }
+
+        return value;
     }
 
     private User getAuthenticatedAdmin() {
