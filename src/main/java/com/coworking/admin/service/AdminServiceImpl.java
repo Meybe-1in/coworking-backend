@@ -1,5 +1,7 @@
 package com.coworking.admin.service;
 
+import com.coworking.admin.audit.enums.AuditAction;
+import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.*;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
@@ -38,6 +40,7 @@ public class AdminServiceImpl implements AdminService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoomRepository roomRepository;
+    private final AuditLogService auditLogService;
     private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$";
 
     // Obtiene todas las reservas y las transforma a DTO de respuesta
@@ -100,6 +103,12 @@ public class AdminServiceImpl implements AdminService {
         reservation.setStatus(ReservationStatus.CANCELLED);
 
         reservationRepository.save(reservation);
+
+        auditLogService.log(
+                AuditAction.RESERVATION_CANCELLED,
+                "Reservation",
+                reservation.getId()
+        );
 
     }
 
@@ -176,6 +185,16 @@ public class AdminServiceImpl implements AdminService {
 
         user.setEnabled(request.getEnabled());
         userRepository.save(user);
+
+        auditLogService.log(
+                request.getEnabled()
+                        ? AuditAction.USER_ACTIVATED
+                        : AuditAction.USER_DEACTIVATED,
+                "User",
+                user.getId()
+        );
+
+
         return mapToUserAdminResponse(user);
     }
 
