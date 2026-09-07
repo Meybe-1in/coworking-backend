@@ -18,14 +18,15 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpHeaders;
 
 import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -188,5 +189,115 @@ class AdminAuditControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10));
+    }
+
+    //export csv
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldExportAuditLogsCsvSuccessfully() throws Exception {
+
+        byte[] csv = (
+                "ID,Administrador,Acción,Entidad,ID Entidad,Fecha\n" +
+                        "1,admin,ROOM_CREATED,Room,10,01/09/2026 09:00\n"
+        ).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        when(auditLogService.exportAuditLogsCsv(
+                any(AuditLogRequest.class)
+        )).thenReturn(csv);
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request
+                                .MockMvcRequestBuilders
+                                .post("/admin/audit-logs/export/csv")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "adminName": "admin",
+                                      "startDate": "2026-09-01",
+                                      "endDate": "2026-09-03"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        header().string(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"audit-logs.csv\""
+                        )
+                )
+                .andExpect(
+                        content().contentType("text/csv")
+                )
+                .andExpect(
+                        content().bytes(csv)
+                );
+
+        verify(auditLogService).exportAuditLogsCsv(
+                any(AuditLogRequest.class)
+        );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldExportAuditLogsCsvWithoutFilters() throws Exception {
+
+        byte[] csv = (
+                "ID,Administrador,Acción,Entidad,ID Entidad,Fecha\n"
+        ).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        when(auditLogService.exportAuditLogsCsv(
+                any(AuditLogRequest.class)
+        )).thenReturn(csv);
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request
+                                .MockMvcRequestBuilders
+                                .post("/admin/audit-logs/export/csv")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}")
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        header().string(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"audit-logs.csv\""
+                        )
+                )
+                .andExpect(
+                        content().contentType("text/csv")
+                );
+
+        verify(auditLogService).exportAuditLogsCsv(
+                any(AuditLogRequest.class)
+        );
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldRejectInvalidDateRangeWhenExportingCsv() throws Exception {
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request
+                                .MockMvcRequestBuilders
+                                .post("/admin/audit-logs/export/csv")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "startDate": "2026-09-10",
+                                      "endDate": "2026-09-01"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(
+                auditLogService,
+                never()
+        ).exportAuditLogsCsv(
+                any(AuditLogRequest.class)
+        );
     }
 }

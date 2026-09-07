@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -29,6 +30,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -247,5 +250,177 @@ class AuditLogServiceTest {
                 .thenReturn(authentication);
 
         SecurityContextHolder.setContext(securityContext);
+    }
+
+    //export csv
+    @Test
+    void shouldExportAuditLogsCsvSuccessfully() {
+
+        AuditLogRequest request = new AuditLogRequest();
+
+        User admin = new User();
+        admin.setId(99L);
+        admin.setUsername("admin");
+        admin.setEmail("admin@test.com");
+
+        AuditLog auditLog = new AuditLog();
+        auditLog.setId(1L);
+        auditLog.setAdmin(admin);
+        auditLog.setAction(AuditAction.ROOM_CREATED);
+        auditLog.setEntityType("Room");
+        auditLog.setEntityId(10L);
+        auditLog.setCreatedAt(
+                Instant.parse("2026-09-01T15:00:00Z")
+        );
+
+        when(auditLogRepository.findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of(auditLog));
+
+        byte[] result =
+                auditLogService.exportAuditLogsCsv(request);
+
+        assertNotNull(result);
+
+        String csv = new String(
+                result,
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(csv.contains(
+                "ID,Administrador,Acción,Entidad,ID Entidad,Fecha"
+        ));
+
+        assertTrue(csv.contains("admin"));
+        assertTrue(csv.contains("ROOM_CREATED"));
+        assertTrue(csv.contains("Room"));
+        assertTrue(csv.contains("10"));
+
+        // 15:00 UTC = 09:00 en El Salvador
+        assertTrue(csv.contains("01/09/2026 09:00"));
+
+        verify(auditLogRepository).findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        );
+    }
+
+    @Test
+    void shouldExportAuditLogsFilteredByAdminName() {
+
+        AuditLogRequest request = new AuditLogRequest();
+        request.setAdminName("admin");
+
+        when(auditLogRepository.findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        byte[] result =
+                auditLogService.exportAuditLogsCsv(request);
+
+        assertNotNull(result);
+
+        String csv = new String(
+                result,
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(csv.contains(
+                "ID,Administrador,Acción,Entidad,ID Entidad,Fecha"
+        ));
+
+        verify(auditLogRepository).findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        );
+    }
+
+    @Test
+    void shouldExportAuditLogsFilteredByDateRange() {
+
+        AuditLogRequest request = new AuditLogRequest();
+
+        request.setStartDate(
+                LocalDate.of(2026, 9, 1)
+        );
+
+        request.setEndDate(
+                LocalDate.of(2026, 9, 3)
+        );
+
+        when(auditLogRepository.findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        byte[] result =
+                auditLogService.exportAuditLogsCsv(request);
+
+        assertNotNull(result);
+
+        verify(auditLogRepository).findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        );
+    }
+
+    @Test
+    void shouldThrowWhenExportingWithInvalidDateRange() {
+
+        AuditLogRequest request = new AuditLogRequest();
+
+        request.setStartDate(
+                LocalDate.of(2026, 9, 10)
+        );
+
+        request.setEndDate(
+                LocalDate.of(2026, 9, 1)
+        );
+
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> auditLogService.exportAuditLogsCsv(request)
+                );
+
+        assertEquals(
+                "La fecha de inicio no puede ser posterior a la fecha de fin",
+                exception.getMessage()
+        );
+
+        verify(auditLogRepository, never()).findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        );
+    }
+
+    @Test
+    void shouldExportEmptyAuditLogsCsv() {
+
+        AuditLogRequest request = new AuditLogRequest();
+
+        when(auditLogRepository.findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        )).thenReturn(List.of());
+
+        byte[] result =
+                auditLogService.exportAuditLogsCsv(request);
+
+        String csv = new String(
+                result,
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(csv.contains(
+                "ID,Administrador,Acción,Entidad,ID Entidad,Fecha"
+        ));
+
+        verify(auditLogRepository).findAll(
+                ArgumentMatchers.<Specification<AuditLog>>any(),
+                any(Sort.class)
+        );
     }
 }
