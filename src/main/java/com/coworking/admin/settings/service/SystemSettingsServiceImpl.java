@@ -29,7 +29,6 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
     private final SystemSettingsRepository systemSettingsRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public SystemSettingsResponse getSettings() {
 
         SystemSettings settings = getOrCreateSettings();
