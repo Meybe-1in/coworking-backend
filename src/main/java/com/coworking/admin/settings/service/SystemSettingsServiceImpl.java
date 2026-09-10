@@ -16,6 +16,8 @@ import java.time.LocalTime;
 @RequiredArgsConstructor
 public class SystemSettingsServiceImpl implements SystemSettingsService {
 
+    private static final String DEFAULT_CONFIG_KEY = "GLOBAL";
+
     private static final LocalTime DEFAULT_OPENING_TIME =
             LocalTime.of(7, 0);
 
@@ -82,7 +84,7 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
     private SystemSettings getOrCreateSettings() {
 
         return systemSettingsRepository
-                .findFirstByOrderByIdAsc()
+                .findByConfigKey(DEFAULT_CONFIG_KEY)
                 .orElseGet(this::createDefaultSettings);
     }
 
@@ -90,6 +92,7 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
 
         SystemSettings settings = new SystemSettings();
 
+        settings.setConfigKey(DEFAULT_CONFIG_KEY);
         settings.setOpeningTime(DEFAULT_OPENING_TIME);
         settings.setClosingTime(DEFAULT_CLOSING_TIME);
         settings.setMaxReservationHours(

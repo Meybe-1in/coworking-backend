@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface SystemSettingsRepository extends JpaRepository<SystemSettings, Long> {
 
-    Optional<SystemSettings> findFirstByOrderByIdAsc();
+    Optional<SystemSettings> findByConfigKey(String configKey);
 }

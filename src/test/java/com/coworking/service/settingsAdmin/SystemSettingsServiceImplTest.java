@@ -39,6 +39,7 @@ class SystemSettingsServiceImplTest {
         settings = new SystemSettings();
 
         settings.setId(1L);
+        settings.setConfigKey("GLOBAL");
         settings.setOpeningTime(LocalTime.of(7, 0));
         settings.setClosingTime(LocalTime.of(20, 0));
         settings.setMaxReservationHours(8);
@@ -56,7 +57,7 @@ class SystemSettingsServiceImplTest {
     void getSettings_shouldReturnExistingSettings() {
 
         // Given
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         // When
@@ -112,14 +113,14 @@ class SystemSettingsServiceImplTest {
         );
 
         verify(systemSettingsRepository)
-                .findFirstByOrderByIdAsc();
+                .findByConfigKey("GLOBAL");
     }
 
     @Test
     void getSettings_shouldCreateDefaultSettingsWhenNoneExist() {
 
         // Given
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.empty());
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -165,7 +166,7 @@ class SystemSettingsServiceImplTest {
     void getCurrentSettings_shouldReturnExistingSettings() {
 
         // Given
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         // When
@@ -177,14 +178,14 @@ class SystemSettingsServiceImplTest {
         assertEquals(settings, result);
 
         verify(systemSettingsRepository)
-                .findFirstByOrderByIdAsc();
+                .findByConfigKey("GLOBAL");
     }
 
     @Test
     void getCurrentSettings_shouldCreateDefaultSettingsWhenNoneExist() {
 
         // Given
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.empty());
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -242,7 +243,7 @@ class SystemSettingsServiceImplTest {
                         "Nueva dirección"
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -315,7 +316,7 @@ class SystemSettingsServiceImplTest {
                         "Nueva dirección"
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.empty());
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -460,7 +461,7 @@ class SystemSettingsServiceImplTest {
                         "Nueva dirección"
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -498,7 +499,7 @@ class SystemSettingsServiceImplTest {
                         "Nueva dirección"
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -535,7 +536,7 @@ class SystemSettingsServiceImplTest {
                         null
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -577,7 +578,7 @@ class SystemSettingsServiceImplTest {
                         "Updated address"
                 );
 
-        when(systemSettingsRepository.findFirstByOrderByIdAsc())
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
                 .thenReturn(Optional.of(settings));
 
         when(systemSettingsRepository.save(any(SystemSettings.class)))
@@ -635,5 +636,31 @@ class SystemSettingsServiceImplTest {
                 "Updated address",
                 saved.getInstitutionAddress()
         );
+    }
+
+    @Test
+    void getSettings_shouldCreateDefaultSettingsWithGlobalConfigKey() {
+
+        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
+                .thenReturn(Optional.empty());
+
+        when(systemSettingsRepository.save(any(SystemSettings.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SystemSettingsResponse response =
+                systemSettingsService.getSettings();
+
+        assertNotNull(response);
+
+        ArgumentCaptor<SystemSettings> captor =
+                ArgumentCaptor.forClass(SystemSettings.class);
+
+        verify(systemSettingsRepository)
+                .save(captor.capture());
+
+        SystemSettings savedSettings =
+                captor.getValue();
+
+        assertEquals("GLOBAL", savedSettings.getConfigKey());
     }
 }

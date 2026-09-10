@@ -22,6 +22,9 @@ public class SystemSettings {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String configKey;
+
     @Column(nullable = false)
     private LocalTime openingTime;
 
