@@ -1,5 +1,8 @@
 package com.coworking.service.reservation;
 
+import com.coworking.admin.settings.entity.SystemSettings;
+import com.coworking.admin.settings.service.SystemSettingsService;
+import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.dto.ReservationRequest;
 import com.coworking.reservation.dto.ReservationResponse;
@@ -20,10 +23,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,6 +42,9 @@ class ReservationServiceTest {
 
     @Mock
     private Clock clock;
+
+    @Mock
+    private SystemSettingsService systemSettingsService;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -70,20 +73,36 @@ class ReservationServiceTest {
         room.setName("Sala A");
         room.setPrice(BigDecimal.valueOf(10.0));
 
-        when(clock.instant()).thenReturn(Instant.parse("2025-01-01T10:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(java.time.LocalTime.of(7, 0));
+        settings.setClosingTime(java.time.LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        when(clock.instant())
+                .thenReturn(Instant.parse("2025-01-01T10:00:00Z"));
+
+        when(clock.getZone())
+                .thenReturn(ZoneId.systemDefault());
 
         request = new ReservationRequest();
         request.setRoomId(room.getId());
-        request.setStartAt(elSalvadorTime(9)); // 09:00 AM local
-        request.setEndAt(elSalvadorTime(11));   // 11:00 AM local
+        request.setStartAt(elSalvadorTime(9));
+        request.setEndAt(elSalvadorTime(11));
     }
 
     @Test
     void createReservation_success() {
-        // Given
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
                 anyLong(), any(), any())
@@ -94,26 +113,24 @@ class ReservationServiceTest {
         ).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any(Reservation.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0)); // devuelve lo guardado
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         ReservationResponse response =
-                reservationService.createReservation(user.getId(), request);
-
-        Reservation saved = new Reservation();
-        saved.setId(99L);
-        saved.setRoom(room);
-        saved.setUser(user);
-        saved.setStartAt(request.getStartAt());
-        saved.setEndAt(request.getEndAt());
-        saved.setStatus(ReservationStatus.PENDING);
-        saved.setPrice(BigDecimal.valueOf(20.0));
+                reservationService.createReservation(
+                        user.getId(),
+                        request
+                );
 
         assertNotNull(response);
         assertEquals("Sala A", response.getRoomName());
         assertEquals("p1@email.com", response.getUsername());
-        assertEquals(ReservationStatus.PENDING, response.getStatus());
+        assertEquals(
+                ReservationStatus.PENDING,
+                response.getStatus()
+        );
 
-        verify(reservationRepository).save(any(Reservation.class));
+        verify(reservationRepository)
+                .save(any(Reservation.class));
     }
 
     @Test
@@ -123,6 +140,7 @@ class ReservationServiceTest {
 
         assertEquals(ReservationStatus.PAID, reservation.getStatus());
     }
+
     @Test
     void createReservation_shouldCalculatePrice() {
         when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
@@ -217,18 +235,28 @@ class ReservationServiceTest {
                 eq(room.getId()), any(), any()
         );
     }
+
     //Validacion de horario invalido
     @Test
     void createReservation_invalidHour_throwsException() {
-        // 04:00 AM en El Salvador (fuera de horario permitido)
+
+        // 05:00 AM en El Salvador (fuera de horario permitido)
         request.setStartAt(elSalvadorTime(5));
         request.setEndAt(elSalvadorTime(6));
 
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
 
-        assertThrows(ReservationConflictException.class,
-                () -> reservationService.createReservation(user.getId(), request));
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
     }
 
     //delete
@@ -250,16 +278,22 @@ class ReservationServiceTest {
         Reservation reservation = new Reservation();
         reservation.setId(1L);
         reservation.setStatus(ReservationStatus.PENDING);
-        reservation.setCreatedAt(Instant.now());
+        reservation.setCreatedAt(
+                Instant.parse("2025-01-01T09:50:00Z")
+        );
 
         when(reservationRepository.findById(1L))
                 .thenReturn(Optional.of(reservation));
 
         reservationService.markAsPaid(1L);
 
-        assertEquals(ReservationStatus.PAID, reservation.getStatus());
+        assertEquals(
+                ReservationStatus.PAID,
+                reservation.getStatus()
+        );
 
-        verify(reservationRepository).save(reservation);
+        verify(reservationRepository)
+                .save(reservation);
     }
 
     @Test
@@ -467,6 +501,290 @@ class ReservationServiceTest {
         verify(reservationRepository, never()).save(any());
     }
 
+    @Test
+    void createReservation_shouldUseDynamicOpeningTime() {
 
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(8, 0));
+        settings.setClosingTime(LocalTime.of(18, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
 
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(elSalvadorTime(8));
+        request.setEndAt(elSalvadorTime(10));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        when(reservationRepository.findOverlappingForUpdate(
+                anyLong(), any(), any())
+        ).thenReturn(Collections.emptyList());
+
+        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any())
+        ).thenReturn(false);
+
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
+                anyLong(), anyLong(), any(), any())
+        ).thenReturn(Optional.empty());
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationResponse response =
+                reservationService.createReservation(
+                        user.getId(),
+                        request
+                );
+
+        assertNotNull(response);
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+    }
+
+    @Test
+    void createReservation_shouldRejectBeforeDynamicOpeningTime() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(8, 0));
+        settings.setClosingTime(LocalTime.of(18, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(elSalvadorTime(7));
+        request.setEndAt(elSalvadorTime(9));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldRejectAfterDynamicClosingTime() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(8, 0));
+        settings.setClosingTime(LocalTime.of(18, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(elSalvadorTime(17));
+        request.setEndAt(elSalvadorTime(19));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldUseDynamicMaxReservationHours() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(4);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(elSalvadorTime(9));
+        request.setEndAt(elSalvadorTime(14));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+    @Test
+    void createReservation_shouldAllowReservationWithinDynamicMaxHours() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(4);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(elSalvadorTime(9));
+        request.setEndAt(elSalvadorTime(13));
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        when(reservationRepository.findOverlappingForUpdate(
+                anyLong(), any(), any())
+        ).thenReturn(Collections.emptyList());
+
+        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any())
+        ).thenReturn(false);
+
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
+                anyLong(), anyLong(), any(), any())
+        ).thenReturn(Optional.empty());
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ReservationResponse response =
+                reservationService.createReservation(
+                        user.getId(),
+                        request
+                );
+
+        assertNotNull(response);
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
+
+        verify(reservationRepository)
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void markAsPaid_shouldUseDynamicExpirationTime() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(30);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setCreatedAt(
+                Instant.parse("2025-01-01T09:40:00Z")
+        );
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        reservationService.markAsPaid(1L);
+
+        assertEquals(
+                ReservationStatus.PAID,
+                reservation.getStatus()
+        );
+
+        verify(reservationRepository)
+                .save(reservation);
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+    }
+
+    @Test
+    void markAsPaid_shouldExpireUsingDynamicExpirationTime() {
+
+        SystemSettings settings = new SystemSettings();
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        Reservation reservation = new Reservation();
+        reservation.setId(1L);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setCreatedAt(
+                Instant.parse("2025-01-01T09:40:00Z")
+        );
+
+        when(reservationRepository.findById(1L))
+                .thenReturn(Optional.of(reservation));
+
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.markAsPaid(1L)
+        );
+
+        assertEquals(
+                ReservationStatus.EXPIRED,
+                reservation.getStatus()
+        );
+
+        verify(reservationRepository)
+                .save(reservation);
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+    }
 }
