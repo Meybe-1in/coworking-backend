@@ -1,6 +1,9 @@
 package com.coworking.reservation.service;
 
 
+import com.coworking.admin.settings.entity.SystemSettings;
+import com.coworking.admin.settings.service.SystemSettingsService;
+import com.coworking.exception.BadRequestException;
 import com.coworking.exception.ErrorCode;
 import com.coworking.exception.NotFoundException;
 import com.coworking.reservation.dto.CalendarEventResponse;
@@ -34,6 +37,7 @@ public class ReservationService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final Clock clock;
+    private final SystemSettingsService systemSettingsService;
 
     @Transactional
     public ReservationResponse createReservation(Long userId, ReservationRequest request) {
@@ -109,41 +113,65 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
-    private void validateReservationTimes(Instant start, Instant end) {
+    private void validateReservationTimes(
+            Instant startAt,
+            Instant endAt
+    ) {
+
         Instant now = Instant.now(clock);
 
-        // evitar horas pasadas
-        if (start.isBefore(now)) {
-            throw new ReservationConflictException(
-                    ErrorCode.PAST_TIME_NOT_ALLOWED.name(),
-                    "No puedes reservar horas pasadas");
+        if (startAt.isBefore(now)) {
+            throw new BadRequestException(
+                    "La hora de inicio no puede estar en el pasado"
+            );
         }
 
-        // inicio debe ser antes que fin
-        if (!start.isBefore(end)) {
-            throw new ReservationConflictException(
-                    ErrorCode.INVALID_TIME_RANGE.name(),
-                    "La hora de inicio debe ser anterior a la de fin");
-        }
-        // horario 07:00 - 20:00 EN HORA LOCAL
-        ZoneId zone = ZoneId.of("America/El_Salvador");
-
-        LocalTime startLocal = start.atZone(zone).toLocalTime();
-        LocalTime endLocal = end.atZone(zone).toLocalTime();
-
-        // horario permitido
-        if (startLocal.isBefore(LocalTime.of(7, 0)) ||
-                endLocal.isAfter(LocalTime.of(20, 0))) {
-            throw new ReservationConflictException(
-                    ErrorCode.INVALID_TIME_RANGE.name(),
-                    "Las reservas deben estar entre 07:00 y 20:00");
+        if (!startAt.isBefore(endAt)) {
+            throw new BadRequestException(
+                    "La hora de inicio debe ser anterior a la hora de finalización"
+            );
         }
 
-        // duración máxima
-        if (Duration.between(start, end).toHours() > 8) {
-            throw new ReservationConflictException(
-                    ErrorCode.INVALID_DURATION.name(),
-                    "La duración máxima es 8 horas");
+        SystemSettings settings =
+                systemSettingsService.getCurrentSettings();
+
+        ZoneId zoneId =
+                ZoneId.of("America/El_Salvador");
+
+        LocalTime openingTime =
+                settings.getOpeningTime();
+
+        LocalTime closingTime =
+                settings.getClosingTime();
+
+        LocalTime startLocal =
+                startAt.atZone(zoneId).toLocalTime();
+
+        LocalTime endLocal =
+                endAt.atZone(zoneId).toLocalTime();
+
+        if (startLocal.isBefore(openingTime)) {
+            throw new BadRequestException(
+                    "La reserva debe iniciar dentro del horario permitido"
+            );
+        }
+
+        if (endLocal.isAfter(closingTime)) {
+            throw new BadRequestException(
+                    "La reserva debe finalizar dentro del horario permitido"
+            );
+        }
+
+        long reservationMinutes =
+                Duration.between(startAt, endAt).toMinutes();
+
+        long maxReservationMinutes =
+                settings.getMaxReservationHours() * 60L;
+
+        if (reservationMinutes > maxReservationMinutes) {
+            throw new BadRequestException(
+                    "La duración de la reserva supera el máximo permitido"
+            );
         }
     }
 
@@ -224,10 +252,18 @@ public class ReservationService {
         }
 
         //validar expiracion(15 min)
-        Instant expirationTime = reservation.getCreatedAt()
-                        .plus(Duration.ofMinutes(15));
+        SystemSettings settings =
+                systemSettingsService.getCurrentSettings();
 
-        if (Instant.now(clock).isAfter(expirationTime)){
+        Instant expirationTime =
+                reservation.getCreatedAt()
+                        .plus(
+                                Duration.ofMinutes(
+                                        settings.getPendingExpirationMinutes()
+                                )
+                        );
+
+        if (Instant.now(clock).isAfter(expirationTime)) {
             reservation.setStatus(ReservationStatus.EXPIRED);
 
             reservationRepository.save(reservation);
