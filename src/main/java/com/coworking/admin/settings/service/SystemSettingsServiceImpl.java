@@ -111,10 +111,39 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
             UpdateSystemSettingsRequest request
     ) {
 
-        if (!request.openingTime().isBefore(request.closingTime())) {
-            throw new BadRequestException(
-                    "La hora de apertura debe ser anterior a la hora de cierre"
-            );
+        if (request == null) {
+            throw new BadRequestException("La configuración es obligatoria");
+        }
+
+        if (request.openingTime() == null ||
+                request.closingTime() == null) {
+
+            throw new BadRequestException("El horario de atención es obligatorio");
+        }
+
+        if (request.maxReservationHours() == null ||
+                request.maxReservationHours() < 1) {
+
+            throw new BadRequestException("La duración máxima debe ser mayor que 0");
+        }
+
+        if (request.pendingExpirationMinutes() == null ||
+                request.pendingExpirationMinutes() < 1) {
+
+            throw new BadRequestException("El tiempo de expiración debe ser mayor que 0");
+        }
+
+        if (request.institutionName() == null ||
+                request.institutionName().isBlank()) {
+
+            throw new BadRequestException("El nombre institucional es obligatorio");
+        }
+
+        if (!request.openingTime().isBefore(
+                request.closingTime()
+        )) {
+
+            throw new BadRequestException("La hora de apertura debe ser anterior a la hora de cierre");
         }
 
         long availableMinutes = Duration.between(
@@ -126,9 +155,8 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
                 request.maxReservationHours() * 60L;
 
         if (maxReservationMinutes > availableMinutes) {
-            throw new BadRequestException(
-                    "La duración máxima no puede superar el horario permitido"
-            );
+
+            throw new BadRequestException("La duración máxima no puede superar el horario permitido");
         }
     }
 

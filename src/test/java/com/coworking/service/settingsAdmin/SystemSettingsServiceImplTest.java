@@ -663,4 +663,109 @@ class SystemSettingsServiceImplTest {
 
         assertEquals("GLOBAL", savedSettings.getConfigKey());
     }
+
+    @Test
+    void updateSettings_shouldRejectNullRequest() {
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(null)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+
+    @Test
+    void updateSettings_shouldRejectNullOpeningTime() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        null,
+                        LocalTime.of(18, 0),
+                        6,
+                        30,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+    @Test
+    void updateSettings_shouldRejectNullClosingTime() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        LocalTime.of(8, 0),
+                        null,
+                        6,
+                        30,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+    @Test
+    void updateSettings_shouldRejectNullMaxReservationHours() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        LocalTime.of(8, 0),
+                        LocalTime.of(18, 0),
+                        null,
+                        30,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+    @Test
+    void updateSettings_shouldRejectNullPendingExpirationMinutes() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        LocalTime.of(8, 0),
+                        LocalTime.of(18, 0),
+                        6,
+                        null,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
 }
