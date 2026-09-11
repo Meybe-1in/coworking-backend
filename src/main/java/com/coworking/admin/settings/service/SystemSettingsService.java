@@ -6,7 +6,6 @@ import com.coworking.admin.settings.dto.UpdateSystemSettingsRequest;
 import com.coworking.admin.settings.entity.SystemSettings;
 import org.springframework.stereotype.Service;
 
-@Service
 public interface SystemSettingsService {
 
     SystemSettingsResponse getSettings();
