@@ -18,7 +18,7 @@ import com.coworking.user.model.User;
 import com.coworking.reservation.repository.ReservationRepository;
 import com.coworking.room.repository.RoomRepository;
 import com.coworking.user.repository.UserRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
