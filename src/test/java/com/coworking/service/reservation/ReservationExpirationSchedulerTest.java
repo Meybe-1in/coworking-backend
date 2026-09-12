@@ -46,6 +46,10 @@ class ReservationExpirationSchedulerTest {
         settings.setMaxReservationHours(8);
         settings.setPendingExpirationMinutes(15);
         settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
     }
 
     @Test

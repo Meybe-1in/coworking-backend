@@ -52,6 +52,7 @@ class ReservationServiceTest {
     private User user;
     private Room room;
     private ReservationRequest request;
+    private SystemSettings settings;
 
     private Instant elSalvadorTime(int hour) {
         return ZonedDateTime.of(
@@ -73,7 +74,7 @@ class ReservationServiceTest {
         room.setName("Sala A");
         room.setPrice(BigDecimal.valueOf(10.0));
 
-        SystemSettings settings = new SystemSettings();
+        settings = new SystemSettings();
         settings.setOpeningTime(java.time.LocalTime.of(7, 0));
         settings.setClosingTime(java.time.LocalTime.of(20, 0));
         settings.setMaxReservationHours(8);
@@ -786,5 +787,86 @@ class ReservationServiceTest {
 
         verify(systemSettingsService)
                 .getCurrentSettings();
+    }
+
+    @Test
+    void createReservation_shouldAllowExactMaximumDuration() {
+
+        settings.setMaxReservationHours(2);
+
+        request.setStartAt(
+                Instant.parse("2025-01-01T15:00:00Z")
+        );
+
+        request.setEndAt(
+                Instant.parse("2025-01-01T17:00:00Z")
+        );
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        when(reservationRepository.findOverlappingForUpdate(
+                anyLong(), any(), any())
+        ).thenReturn(Collections.emptyList());
+
+        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
+                anyLong(), any(), any())
+        ).thenReturn(false);
+
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
+                anyLong(), anyLong(), any(), any())
+        ).thenReturn(Optional.empty());
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertDoesNotThrow(() ->
+                reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository)
+                .save(any(Reservation.class));
+    }
+    @Test
+    void createReservation_shouldRejectReservationExceedingMaximumDuration() {
+
+        settings.setMaxReservationHours(2);
+
+        request.setStartAt(
+                Instant.parse("2025-01-01T15:00:00Z")
+        );
+
+        request.setEndAt(
+                Instant.parse("2025-01-01T17:01:00Z")
+        );
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
     }
 }
