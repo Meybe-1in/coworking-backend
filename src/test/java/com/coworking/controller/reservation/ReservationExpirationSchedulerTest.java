@@ -1,5 +1,7 @@
 package com.coworking.controller.reservation;
 
+import com.coworking.admin.settings.entity.SystemSettings;
+import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,14 +24,29 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class ReservationExpirationSchedulerTest {
+
     @Mock
     private ReservationRepository reservationRepository;
+
+    @Mock
+    private SystemSettingsService systemSettingsService;
 
     @InjectMocks
     private ReservationExpirationScheduler scheduler;
 
     @Test
     void shouldExpirePendingReservations() {
+
+        SystemSettings settings = new SystemSettings();
+
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
 
         Reservation reservation = new Reservation();
 

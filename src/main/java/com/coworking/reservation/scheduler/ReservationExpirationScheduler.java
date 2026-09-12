@@ -1,5 +1,7 @@
 package com.coworking.reservation.scheduler;
 
+import com.coworking.admin.settings.entity.SystemSettings;
+import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
@@ -18,12 +20,22 @@ import java.util.List;
 @Slf4j
 public class ReservationExpirationScheduler {
     private final ReservationRepository reservationRepository;
+    private final SystemSettingsService systemSettingsService;
 
     @Scheduled(fixedRate = 60000) //un minuto
     @Transactional
-    public void expiredPendingReservations(){
+    public void expiredPendingReservations() {
 
-        Instant limit = Instant.now().minus(Duration.ofMinutes(15));
+        SystemSettings settings =
+                systemSettingsService.getCurrentSettings();
+
+        Duration expirationDuration =
+                Duration.ofMinutes(
+                        settings.getPendingExpirationMinutes()
+                );
+
+        Instant limit =
+                Instant.now().minus(expirationDuration);
 
         List<Reservation> expiredReservations =
                 reservationRepository
@@ -32,7 +44,7 @@ public class ReservationExpirationScheduler {
                                 limit
                         );
 
-        for (Reservation reservation : expiredReservations){
+        for (Reservation reservation : expiredReservations) {
             reservation.setStatus(ReservationStatus.EXPIRED);
             log.info(
                     "Reservación {} expirada automáticamente",
