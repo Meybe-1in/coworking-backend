@@ -250,7 +250,7 @@ public class ReservationService {
             );
         }
 
-        //validar expiracion(15 min)
+        // validar expiración según configuración del sistema
         SystemSettings settings =
                 systemSettingsService.getCurrentSettings();
 
