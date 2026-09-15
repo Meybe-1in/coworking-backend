@@ -137,25 +137,27 @@ public class ReservationService {
         ZoneId zoneId =
                 ZoneId.of("America/El_Salvador");
 
-        LocalTime openingTime =
-                settings.getOpeningTime();
+        LocalTime openingTime = settings.getOpeningTime();
+        LocalTime closingTime = settings.getClosingTime();
+        LocalTime startLocal = startAt.atZone(zoneId).toLocalTime();
+        LocalTime endLocal = endAt.atZone(zoneId).toLocalTime();
 
-        LocalTime closingTime =
-                settings.getClosingTime();
+        LocalDate startDate = startAt.atZone(zoneId).toLocalDate();
+        LocalDate endDate = endAt.atZone(zoneId).toLocalDate();
 
-        LocalTime startLocal =
-                startAt.atZone(zoneId).toLocalTime();
+        if (!startDate.equals(endDate)) {
+            throw new BadRequestException(
+                    "La reserva debe iniciar y finalizar el mismo día"
+            );
+        }
 
-        LocalTime endLocal =
-                endAt.atZone(zoneId).toLocalTime();
-
-        if (startLocal.isBefore(openingTime)) {
+        if (startLocal.isBefore(openingTime) || !startLocal.isBefore(closingTime)) {
             throw new BadRequestException(
                     "La reserva debe iniciar dentro del horario permitido"
             );
         }
 
-        if (endLocal.isAfter(closingTime)) {
+        if (endLocal.isAfter(closingTime) || !endLocal.isAfter(openingTime)) {
             throw new BadRequestException(
                     "La reserva debe finalizar dentro del horario permitido"
             );
@@ -250,7 +252,7 @@ public class ReservationService {
             );
         }
 
-        //validar expiracion(15 min)
+        // validar expiración según configuración del sistema
         SystemSettings settings =
                 systemSettingsService.getCurrentSettings();
 

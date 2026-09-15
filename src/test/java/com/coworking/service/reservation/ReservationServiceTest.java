@@ -662,6 +662,7 @@ class ReservationServiceTest {
         verify(reservationRepository, never())
                 .save(any(Reservation.class));
     }
+
     @Test
     void createReservation_shouldAllowReservationWithinDynamicMaxHours() {
 
@@ -836,6 +837,7 @@ class ReservationServiceTest {
         verify(reservationRepository)
                 .save(any(Reservation.class));
     }
+
     @Test
     void createReservation_shouldRejectReservationExceedingMaximumDuration() {
 
@@ -847,6 +849,91 @@ class ReservationServiceTest {
 
         request.setEndAt(
                 Instant.parse("2025-01-01T17:01:00Z")
+        );
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldRejectReservationCrossingMidnight() {
+
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(
+                elSalvadorTime(19)
+        );
+
+        request.setEndAt(
+                ZonedDateTime.of(
+                        2025, 1, 2, 7, 0, 0, 0,
+                        ZoneId.of("America/El_Salvador")
+                ).toInstant()
+        );
+
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        assertThrows(
+                BadRequestException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
+
+        verify(systemSettingsService)
+                .getCurrentSettings();
+
+        verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldRejectStartAfterDynamicClosingTime() {
+
+        settings.setOpeningTime(LocalTime.of(8, 0));
+        settings.setClosingTime(LocalTime.of(18, 0));
+        settings.setMaxReservationHours(8);
+        settings.setPendingExpirationMinutes(15);
+        settings.setInstitutionName("Coworking Platform");
+
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        request.setStartAt(
+                elSalvadorTime(19)
+        );
+
+        request.setEndAt(
+                elSalvadorTime(19).plusSeconds(3600)
         );
 
         when(roomRepository.findById(room.getId()))
