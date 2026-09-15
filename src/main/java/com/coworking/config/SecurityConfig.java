@@ -30,8 +30,9 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,AuthenticationProvider authenticationProvider) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> {
@@ -42,7 +43,7 @@ public class SecurityConfig {
                     corsConfiguration.setAllowCredentials(true);
                     return corsConfiguration;
                 }))
-                .exceptionHandling(ex ->ex.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/contact").permitAll()
@@ -58,6 +59,14 @@ public class SecurityConfig {
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
                         //                         ADMIN
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+                        // SETTINGS PUBLIC PARA RESERVAS
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/settings/reservation"
+                        )
+                        .hasAnyRole("USER", "ADMIN")
+
                         .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
 
@@ -70,13 +79,13 @@ public class SecurityConfig {
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
                         .requestMatchers(HttpMethod.GET, "/api/reservations/**")
-                        .hasAnyRole("USER","ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/reservations/**")
-                        .hasAnyRole("USER","ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
 
                         .requestMatchers(HttpMethod.PATCH, "/api/reservations/**")
-                        .hasAnyRole("USER","ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
 
                         .requestMatchers(HttpMethod.DELETE, "/api/reservations/**")
                         .hasRole("ADMIN")
@@ -85,7 +94,7 @@ public class SecurityConfig {
                         //                         ROOMS
                         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**")
-                        .hasAnyRole("USER","ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/rooms/**")
                         .hasRole("ADMIN")
@@ -104,7 +113,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payments/webhook").permitAll()
 
                         .requestMatchers("/api/payments/**")
-                        .hasAnyRole("USER","ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
 
                         .anyRequest().authenticated()
                 )
@@ -117,19 +126,19 @@ public class SecurityConfig {
 
     //------------------------------
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(){
+    public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception{
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
