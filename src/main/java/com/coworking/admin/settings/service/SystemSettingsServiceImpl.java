@@ -121,6 +121,16 @@ public class SystemSettingsServiceImpl implements SystemSettingsService {
             throw new BadRequestException("El horario de atención es obligatorio");
         }
 
+        if (request.openingTime().getMinute() != 0 ||
+                request.openingTime().getSecond() != 0 ||
+                request.closingTime().getMinute() != 0 ||
+                request.closingTime().getSecond() != 0) {
+
+            throw new BadRequestException(
+                    "Las horas de apertura y cierre deben ser horas enteras"
+            );
+        }
+
         if (request.maxReservationHours() == null ||
                 request.maxReservationHours() < 1) {
 
