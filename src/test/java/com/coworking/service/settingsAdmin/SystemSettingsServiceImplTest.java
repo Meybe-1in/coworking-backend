@@ -484,43 +484,6 @@ class SystemSettingsServiceImplTest {
     }
 
     @Test
-    void updateSettings_shouldValidateUsingMinutes() {
-
-        // Given
-        UpdateSystemSettingsRequest request =
-                new UpdateSystemSettingsRequest(
-                        LocalTime.of(8, 0),
-                        LocalTime.of(12, 30),
-                        5,
-                        30,
-                        "Nueva Institución",
-                        "contacto@nueva.com",
-                        "7777-7777",
-                        "Nueva dirección"
-                );
-
-        when(systemSettingsRepository.findByConfigKey("GLOBAL"))
-                .thenReturn(Optional.of(settings));
-
-        when(systemSettingsRepository.save(any(SystemSettings.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // 08:00 - 12:30 = 4.5 horas
-        // maximum = 5 horas
-        // Debe rechazar porque 5h > 4h30m
-
-        assertThrows(
-                BadRequestException.class,
-                () -> systemSettingsService.updateSettings(request)
-        );
-
-        verify(
-                systemSettingsRepository,
-                never()
-        ).save(any(SystemSettings.class));
-    }
-
-    @Test
     void updateSettings_shouldPreserveInstitutionOptionalFieldsWhenProvided() {
 
         // Given
@@ -665,6 +628,54 @@ class SystemSettingsServiceImplTest {
     }
 
     @Test
+    void updateSettings_shouldRejectOpeningTimeWithMinutes() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        LocalTime.of(8, 30),
+                        LocalTime.of(18, 0),
+                        6,
+                        30,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+
+    @Test
+    void updateSettings_shouldRejectClosingTimeWithMinutes() {
+
+        UpdateSystemSettingsRequest request =
+                new UpdateSystemSettingsRequest(
+                        LocalTime.of(8, 0),
+                        LocalTime.of(18, 30),
+                        6,
+                        30,
+                        "Nueva Institución",
+                        "contacto@nueva.com",
+                        "7777-7777",
+                        "Nueva dirección"
+                );
+
+        assertThrows(
+                BadRequestException.class,
+                () -> systemSettingsService.updateSettings(request)
+        );
+
+        verify(systemSettingsRepository, never())
+                .save(any(SystemSettings.class));
+    }
+
+    @Test
     void updateSettings_shouldRejectNullRequest() {
 
         assertThrows(
@@ -699,6 +710,7 @@ class SystemSettingsServiceImplTest {
         verify(systemSettingsRepository, never())
                 .save(any(SystemSettings.class));
     }
+
     @Test
     void updateSettings_shouldRejectNullClosingTime() {
 
@@ -722,6 +734,7 @@ class SystemSettingsServiceImplTest {
         verify(systemSettingsRepository, never())
                 .save(any(SystemSettings.class));
     }
+
     @Test
     void updateSettings_shouldRejectNullMaxReservationHours() {
 
@@ -745,6 +758,7 @@ class SystemSettingsServiceImplTest {
         verify(systemSettingsRepository, never())
                 .save(any(SystemSettings.class));
     }
+
     @Test
     void updateSettings_shouldRejectNullPendingExpirationMinutes() {
 
