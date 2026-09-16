@@ -420,6 +420,34 @@ class RoomServiceTest {
     }
 
     @Test
+    void getRoomsAvailability_pendingReservation_blocksRoom() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of(reservation));
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 10);
+
+        assertEquals(1, result.size());
+        assertFalse(result.getFirst().isAvailable());
+    }
+
+
+    @Test
     void getRoomsAvailability_expiredReservation_doesNotBlockRoom() {
 
         Instant start = Instant.parse("2026-09-16T14:00:00Z");
@@ -467,6 +495,53 @@ class RoomServiceTest {
 
         assertEquals(1, result.size());
         assertFalse(result.getFirst().isAvailable());
+    }
+
+    @Test
+    void getRoomsAvailability_cancelledReservation_doesNotBlockRoom() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of());
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 10);
+
+        assertEquals(1, result.size());
+        assertTrue(result.getFirst().isAvailable());
+    }
+
+    @Test
+    void getRoomsAvailability_shouldRequestOnlyActiveStatuses() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of());
+
+        roomService.getRoomsAvailability(start, end, 10);
+
+        verify(reservationRepository).findActiveOverlappingReservations(
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
+                eq(start),
+                eq(end)
+        );
     }
 }
 
