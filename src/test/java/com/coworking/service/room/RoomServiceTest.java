@@ -449,15 +449,23 @@ class RoomServiceTest {
 
     @Test
     void getRoomsAvailability_expiredReservation_doesNotBlockRoom() {
-
         Instant start = Instant.parse("2026-09-16T14:00:00Z");
         Instant end = Instant.parse("2026-09-16T15:00:00Z");
 
         when(roomRepository.findByCapacityOrderByCapacityAsc(4))
                 .thenReturn(List.of(room));
 
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.EXPIRED);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
         when(reservationRepository.findActiveOverlappingReservations(
-                anyList(),
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
                 eq(start),
                 eq(end)
         )).thenReturn(List.of());
@@ -505,8 +513,17 @@ class RoomServiceTest {
         when(roomRepository.findByCapacityOrderByCapacityAsc(10))
                 .thenReturn(List.of(room));
 
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
         when(reservationRepository.findActiveOverlappingReservations(
-                anyList(),
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
                 eq(start),
                 eq(end)
         )).thenReturn(List.of());
