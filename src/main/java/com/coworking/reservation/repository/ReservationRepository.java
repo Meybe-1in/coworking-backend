@@ -43,6 +43,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             Instant start
     );
 
+    // reservas que bloquean disponibilidad
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.status IN :statuses
+              AND r.startAt < :endAt
+              AND r.endAt > :startAt
+            """)
+    List<Reservation> findActiveOverlappingReservations(
+            @Param("statuses") List<ReservationStatus> statuses,
+            @Param("startAt") Instant startAt,
+            @Param("endAt") Instant endAt
+    );
+
     //overlapping
     boolean existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
             Long roomId,

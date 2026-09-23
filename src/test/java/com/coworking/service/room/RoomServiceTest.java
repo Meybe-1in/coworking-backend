@@ -4,7 +4,10 @@ import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.exception.RoomHasReservationsException;
+import com.coworking.reservation.enums.ReservationStatus;
+import com.coworking.reservation.model.Reservation;
 import com.coworking.reservation.repository.ReservationRepository;
+import com.coworking.room.dto.RoomAvailabilityResponse;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.room.model.Room;
 import com.coworking.room.repository.RoomRepository;
@@ -25,6 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -415,5 +419,146 @@ class RoomServiceTest {
                 );
     }
 
+    @Test
+    void getRoomsAvailability_pendingReservation_blocksRoom() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.PENDING);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of(reservation));
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 10);
+
+        assertEquals(1, result.size());
+        assertFalse(result.getFirst().isAvailable());
+    }
+
+
+    @Test
+    void getRoomsAvailability_expiredReservation_doesNotBlockRoom() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(4))
+                .thenReturn(List.of(room));
+
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.EXPIRED);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of());
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 4);
+
+        assertEquals(1, result.size());
+        assertTrue(result.getFirst().isAvailable());
+    }
+
+    @Test
+    void getRoomsAvailability_paidReservation_blocksRoom() {
+
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.PAID);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of(reservation));
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 10);
+
+        assertEquals(1, result.size());
+        assertFalse(result.getFirst().isAvailable());
+    }
+
+    @Test
+    void getRoomsAvailability_cancelledReservation_doesNotBlockRoom() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        Reservation reservation = new Reservation();
+        reservation.setRoom(room);
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setStartAt(start);
+        reservation.setEndAt(end);
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of());
+
+        List<RoomAvailabilityResponse> result =
+                roomService.getRoomsAvailability(start, end, 10);
+
+        assertEquals(1, result.size());
+        assertTrue(result.getFirst().isAvailable());
+    }
+
+    @Test
+    void getRoomsAvailability_shouldRequestOnlyActiveStatuses() {
+        Instant start = Instant.parse("2026-09-16T14:00:00Z");
+        Instant end = Instant.parse("2026-09-16T15:00:00Z");
+
+        when(roomRepository.findByCapacityOrderByCapacityAsc(10))
+                .thenReturn(List.of(room));
+
+        when(reservationRepository.findActiveOverlappingReservations(
+                anyList(),
+                eq(start),
+                eq(end)
+        )).thenReturn(List.of());
+
+        roomService.getRoomsAvailability(start, end, 10);
+
+        verify(reservationRepository).findActiveOverlappingReservations(
+                eq(List.of(
+                        ReservationStatus.PENDING,
+                        ReservationStatus.PAID
+                )),
+                eq(start),
+                eq(end)
+        );
+    }
 }
 

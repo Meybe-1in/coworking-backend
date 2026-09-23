@@ -4,6 +4,7 @@ import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
 import com.coworking.exception.RoomHasReservationsException;
+import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.room.dto.RoomAvailabilityResponse;
 import com.coworking.room.dto.RoomDto;
 import com.coworking.reservation.model.Reservation;
@@ -197,8 +198,14 @@ public class RoomService {
                 roomRepository.findByCapacityOrderByCapacityAsc(people);
 
         List<Reservation> overlapping =
-                reservationRepository
-                        .findByStartAtLessThanAndEndAtGreaterThan(end, start);
+                reservationRepository.findActiveOverlappingReservations(
+                        List.of(
+                                ReservationStatus.PENDING,
+                                ReservationStatus.PAID
+                        ),
+                        start,
+                        end
+                );
 
         Set<Long> busyRoomIds =
                 overlapping.stream()
