@@ -26,16 +26,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     );
 
     //verificar si tiene reserva identica
-    Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAt(
+    Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
             Long userId,
             Long roomId,
             Instant start,
-            Instant end
-    );
-
-    List<Reservation> findByStartAtLessThanAndEndAtGreaterThan(
             Instant end,
-            Instant start);
+            List<ReservationStatus> statuses
+    );
 
     List<Reservation> findByStatusAndStartAtLessThanAndEndAtGreaterThan(
             ReservationStatus status,

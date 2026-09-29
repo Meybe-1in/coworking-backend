@@ -61,6 +61,14 @@ class ReservationServiceTest {
         ).toInstant();
     }
 
+    private ReservationRequest request(Long roomId, Instant startAt, Instant endAt) {
+        ReservationRequest req = new ReservationRequest();
+        req.setRoomId(roomId);
+        req.setStartAt(startAt);
+        req.setEndAt(endAt);
+        return req;
+    }
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -106,11 +114,11 @@ class ReservationServiceTest {
                 .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any())
+                anyLong(), any(), any(), anyList())
         ).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any())
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList())
         ).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any(Reservation.class)))
@@ -148,11 +156,11 @@ class ReservationServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any()))
+                anyLong(), any(), any(), anyList()))
                 .thenReturn(Collections.emptyList());
 
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any()))
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList()))
                 .thenReturn(Optional.empty());
 
         ArgumentCaptor<Reservation> captor = ArgumentCaptor.forClass(Reservation.class);
@@ -175,39 +183,71 @@ class ReservationServiceTest {
     @Test
     void createReservation_conflictOverlap_throwsException() {
         // Given
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
+
+        Reservation overlappingReservation = new Reservation();
+        overlappingReservation.setStatus(ReservationStatus.PAID);
+        overlappingReservation.setCreatedAt(
+                Instant.parse("2025-01-01T09:00:00Z")
+        );
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any()
-        )).thenReturn(Collections.emptyList());
-
-        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any()
-        )).thenReturn(true);
+                anyLong(),
+                any(),
+                any(),
+                anyList()
+        )).thenReturn(List.of(overlappingReservation));
 
         // When + Then
-        assertThrows(ReservationConflictException.class,
-                () -> reservationService.createReservation(user.getId(), request));
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
     }
 
     @Test
     void createReservation_duplicateReservation_throwsException() {
+
         // Given
-        when(roomRepository.findById(room.getId())).thenReturn(Optional.of(room));
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(roomRepository.findById(room.getId()))
+                .thenReturn(Optional.of(room));
+
+        when(userRepository.findById(user.getId()))
+                .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any())
-        ).thenReturn(Collections.emptyList());
+                anyLong(),
+                any(),
+                any(),
+                anyList()
+        )).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any())
-        ).thenReturn(Optional.of(new Reservation()));
+        Reservation duplicateReservation = new Reservation();
+        duplicateReservation.setStatus(ReservationStatus.PAID);
+
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(),
+                anyLong(),
+                any(),
+                any(),
+                anyList()
+        )).thenReturn(Optional.of(duplicateReservation));
 
         // When + Then
-        assertThrows(ReservationConflictException.class,
-                () -> reservationService.createReservation(user.getId(), request));
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request
+                )
+        );
     }
 
     @Test
@@ -216,15 +256,11 @@ class ReservationServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any()
+                anyLong(), any(), any(), anyList()
         )).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any()
-        )).thenReturn(false);
-
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any()
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList()
         )).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any()))
@@ -233,7 +269,7 @@ class ReservationServiceTest {
         reservationService.createReservation(user.getId(), request);
 
         verify(reservationRepository).findOverlappingForUpdate(
-                eq(room.getId()), any(), any()
+                eq(room.getId()), any(), any(), anyList()
         );
     }
 
@@ -525,15 +561,11 @@ class ReservationServiceTest {
                 .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any())
+                anyLong(), any(), any(), anyList())
         ).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any())
-        ).thenReturn(false);
-
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any())
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList())
         ).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any(Reservation.class)))
@@ -686,15 +718,11 @@ class ReservationServiceTest {
                 .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any())
+                anyLong(), any(), any(), anyList())
         ).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any())
-        ).thenReturn(false);
-
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any())
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList())
         ).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any(Reservation.class)))
@@ -810,15 +838,11 @@ class ReservationServiceTest {
                 .thenReturn(Optional.of(user));
 
         when(reservationRepository.findOverlappingForUpdate(
-                anyLong(), any(), any())
+                anyLong(), any(), any(), anyList())
         ).thenReturn(Collections.emptyList());
 
-        when(reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                anyLong(), any(), any())
-        ).thenReturn(false);
-
-        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(
-                anyLong(), anyLong(), any(), any())
+        when(reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                anyLong(), anyLong(), any(), any(), anyList())
         ).thenReturn(Optional.empty());
 
         when(reservationRepository.save(any(Reservation.class)))
@@ -954,6 +978,127 @@ class ReservationServiceTest {
                 .getCurrentSettings();
 
         verify(reservationRepository, never())
+                .save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldRejectOverlappingPendingReservationStillValid() {
+        // Arrange
+        Room room = new Room();
+        room.setId(1L);
+        room.setPrice(BigDecimal.valueOf(10));
+
+        User user = new User();
+        user.setId(1L);
+
+        Instant now = Instant.parse("2026-09-29T18:00:00Z");
+        Instant start = Instant.parse("2026-09-29T19:00:00Z");
+        Instant end = Instant.parse("2026-09-29T20:00:00Z");
+
+        SystemSettings settings = new SystemSettings();
+        settings.setPendingExpirationMinutes(15);
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+
+        Reservation pendingReservation = new Reservation();
+        pendingReservation.setStatus(ReservationStatus.PENDING);
+        pendingReservation.setCreatedAt(
+                now.minus(Duration.ofMinutes(5))
+        );
+
+        when(clock.instant()).thenReturn(now);
+        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        when(reservationRepository.findOverlappingForUpdate(
+                eq(room.getId()),
+                eq(start),
+                eq(end),
+                anyList()
+        )).thenReturn(List.of(pendingReservation));
+
+        // Act + Assert
+        assertThrows(
+                ReservationConflictException.class,
+                () -> reservationService.createReservation(
+                        user.getId(),
+                        request(room.getId(), start, end)
+                )
+        );
+
+        verify(reservationRepository, never()).save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_shouldAllowOverlappingExpiredPendingReservation() {
+        // Arrange
+        Room room = new Room();
+        room.setId(1L);
+        room.setPrice(BigDecimal.valueOf(10));
+
+        User user = new User();
+        user.setId(1L);
+
+        Instant now = Instant.parse("2026-09-29T18:00:00Z");
+        Instant start = Instant.parse("2026-09-29T19:00:00Z");
+        Instant end = Instant.parse("2026-09-29T20:00:00Z");
+
+        SystemSettings settings = new SystemSettings();
+        settings.setPendingExpirationMinutes(15);
+        settings.setOpeningTime(LocalTime.of(7, 0));
+        settings.setClosingTime(LocalTime.of(20, 0));
+        settings.setMaxReservationHours(8);
+
+        Reservation expiredPending = new Reservation();
+        expiredPending.setStatus(ReservationStatus.PENDING);
+        expiredPending.setCreatedAt(
+                now.minus(Duration.ofMinutes(20))
+        );
+
+        when(clock.instant()).thenReturn(now);
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(room));
+        when(userRepository.findById(1L))
+                .thenReturn(Optional.of(user));
+        when(systemSettingsService.getCurrentSettings())
+                .thenReturn(settings);
+
+        when(reservationRepository.findOverlappingForUpdate(
+                eq(room.getId()),
+                eq(start),
+                eq(end),
+                anyList()
+        )).thenReturn(List.of(expiredPending));
+
+        when(reservationRepository
+                .findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                        eq(user.getId()),
+                        eq(room.getId()),
+                        eq(start),
+                        eq(end),
+                        anyList()
+                ))
+                .thenReturn(Optional.empty());
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+
+        ReservationResponse response =
+                reservationService.createReservation(
+                        user.getId(),
+                        request(room.getId(), start, end)
+                );
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(ReservationStatus.PENDING, response.getStatus());
+
+        verify(reservationRepository)
                 .save(any(Reservation.class));
     }
 }
