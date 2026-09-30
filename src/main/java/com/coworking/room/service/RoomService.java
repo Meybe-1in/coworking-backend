@@ -3,6 +3,8 @@ package com.coworking.room.service;
 import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
+import com.coworking.admin.settings.entity.SystemSettings;
+import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.exception.RoomHasReservationsException;
 import com.coworking.reservation.enums.ReservationStatus;
 import com.coworking.room.dto.RoomAvailabilityResponse;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
+import java.time.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -36,6 +38,8 @@ public class RoomService {
     private final ReservationRepository reservationRepository;
     private final StorageService storageService;
     private final AuditLogService auditLogService;
+    private final SystemSettingsService systemSettingsService;
+    private final Clock clock;
     // MAPPERS
 
     private RoomDto mapToDto(Room room) {
@@ -66,7 +70,7 @@ public class RoomService {
         return room;
     }
 
-    private RoomAvailabilityResponse mapToAvailability(Room room, boolean available) {
+    private RoomAvailabilityResponse mapToAvailability(Room room, boolean available, Instant nextAvailable) {
 
         RoomAvailabilityResponse dto = new RoomAvailabilityResponse();
 
@@ -77,6 +81,7 @@ public class RoomService {
         dto.setLocation(room.getLocation());
         dto.setImageUrl(room.getImageUrl());
         dto.setAvailable(available);
+        dto.setNextAvailable(nextAvailable);
 
         return dto;
     }
@@ -188,17 +193,157 @@ public class RoomService {
 
     // ROOM AVAILABILITY
 
+    @Transactional(readOnly = true)
     public List<RoomAvailabilityResponse> getRoomsAvailability(
             Instant start,
             Instant end,
             Integer people
     ) {
+        var settings = systemSettingsService.getCurrentSettings();
 
         List<Room> rooms =
-                roomRepository.findByCapacityOrderByCapacityAsc(people);
+                roomRepository.findByCapacityGreaterThanEqualOrderByCapacityAsc(
+                        people
+                );
 
-        List<Reservation> overlapping =
-                reservationRepository.findActiveOverlappingReservations(
+        List<ReservationStatus> blockingStatuses = List.of(
+                ReservationStatus.PENDING,
+                ReservationStatus.PAID
+        );
+
+        return rooms.stream()
+                .map(room -> {
+                    List<Reservation> reservations =
+                            reservationRepository.findRoomOverlappingReservations(
+                                    room.getId(),
+                                    blockingStatuses,
+                                    start,
+                                    end
+                            );
+
+                    List<Reservation> activeReservations =
+                            reservations.stream()
+                                    .filter(reservation ->
+                                            isBlockingReservation(
+                                                    reservation,
+                                                    settings.getPendingExpirationMinutes()
+                                            )
+                                    )
+                                    .toList();
+
+                    boolean available = activeReservations.isEmpty();
+
+                    Instant nextAvailable = available
+                            ? null
+                            : findNextAvailable(
+                            room,
+                            start,
+                            end,
+                            settings
+                    );
+
+                    return mapToAvailability(
+                            room,
+                            available,
+                            nextAvailable
+                    );
+                })
+                .toList();
+    }
+
+    private boolean isBlockingReservation(
+            Reservation reservation,
+            int pendingExpirationMinutes
+    ) {
+        if (reservation.getStatus() == ReservationStatus.PAID) {
+            return true;
+        }
+
+        Instant expirationTime = reservation.getCreatedAt()
+                .plus(Duration.ofMinutes(pendingExpirationMinutes));
+
+        return Instant.now(clock).isBefore(expirationTime);
+    }
+
+    private Instant findNextAvailable(
+            Room room,
+            Instant requestedStart,
+            Instant requestedEnd,
+            SystemSettings settings
+    ) {
+        ZoneId zoneId = ZoneId.of("America/El_Salvador");
+
+        LocalDate date = requestedStart
+                .atZone(zoneId)
+                .toLocalDate();
+
+        LocalTime requestedStartTime = requestedStart
+                .atZone(zoneId)
+                .toLocalTime();
+
+        Duration requestedDuration =
+                Duration.between(requestedStart, requestedEnd);
+
+        LocalTime openingTime = settings.getOpeningTime();
+        LocalTime closingTime = settings.getClosingTime();
+
+        LocalTime candidateTime = requestedStartTime;
+
+        if (candidateTime.isBefore(openingTime)) {
+            candidateTime = openingTime;
+        }
+
+        candidateTime = candidateTime
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
+        if (candidateTime.isBefore(requestedStartTime)) {
+            candidateTime = candidateTime.plusHours(1);
+        }
+
+        while (!candidateTime.plus(requestedDuration).isAfter(closingTime)) {
+
+            LocalDateTime candidateStartDateTime =
+                    LocalDateTime.of(date, candidateTime);
+
+            LocalDateTime candidateEndDateTime =
+                    candidateStartDateTime.plus(requestedDuration);
+
+            Instant candidateStart =
+                    candidateStartDateTime
+                            .atZone(zoneId)
+                            .toInstant();
+
+            Instant candidateEnd =
+                    candidateEndDateTime
+                            .atZone(zoneId)
+                            .toInstant();
+
+            if (!hasBlockingReservation(
+                    room,
+                    candidateStart,
+                    candidateEnd,
+                    settings
+            )) {
+                return candidateStart;
+            }
+
+            candidateTime = candidateTime.plusHours(1);
+        }
+
+        return null;
+    }
+
+    private boolean hasBlockingReservation(
+            Room room,
+            Instant start,
+            Instant end,
+            SystemSettings settings
+    ) {
+        List<Reservation> reservations =
+                reservationRepository.findRoomOverlappingReservations(
+                        room.getId(),
                         List.of(
                                 ReservationStatus.PENDING,
                                 ReservationStatus.PAID
@@ -207,20 +352,13 @@ public class RoomService {
                         end
                 );
 
-        Set<Long> busyRoomIds =
-                overlapping.stream()
-                        .map(r -> r.getRoom().getId())
-                        .collect(Collectors.toSet());
-
-        return rooms.stream()
-                .map(room -> {
-
-                    boolean available = !busyRoomIds.contains(room.getId());
-
-                    return mapToAvailability(room, available);
-
-                })
-                .toList();
+        return reservations.stream()
+                .anyMatch(reservation ->
+                        isBlockingReservation(
+                                reservation,
+                                settings.getPendingExpirationMinutes()
+                        )
+                );
     }
 
 }
