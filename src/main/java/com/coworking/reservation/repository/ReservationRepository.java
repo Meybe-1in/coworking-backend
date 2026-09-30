@@ -18,13 +18,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByUserEmailOrderByCreatedAtDesc(String email);
 
-    //verificar si se cruzan horarios
-    List<Reservation> findByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-            Long roomId,
-            Instant end,
-            Instant start
-    );
-
     //verificar si tiene reserva identica
     Optional<Reservation> findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
             Long userId,
@@ -54,7 +47,24 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("endAt") Instant endAt
     );
 
-    //overlapping
+    // reservas de una sala que se cruzan con un intervalo
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.room.id = :roomId
+              AND r.status IN :statuses
+              AND r.startAt < :endAt
+              AND r.endAt > :startAt
+            ORDER BY r.startAt ASC
+            """)
+    List<Reservation> findRoomOverlappingReservations(
+            @Param("roomId") Long roomId,
+            @Param("statuses") List<ReservationStatus> statuses,
+            @Param("startAt") Instant startAt,
+            @Param("endAt") Instant endAt
+    );
+
+    //overlapping con bloqueo para creación de reservas
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
-    List<Room> findByCapacityOrderByCapacityAsc(Integer capacity);
+    List<Room> findByCapacityGreaterThanEqualOrderByCapacityAsc(Integer capacity);
 
     long countByAvailableTrue();
 

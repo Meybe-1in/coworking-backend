@@ -3,6 +3,7 @@ package com.coworking.room.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Data
 public class RoomAvailabilityResponse {
@@ -13,4 +14,5 @@ public class RoomAvailabilityResponse {
     private String location;
     private String imageUrl;
     private boolean available;
+    private Instant nextAvailable;
 }
