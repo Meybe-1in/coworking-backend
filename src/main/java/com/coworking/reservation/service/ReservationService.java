@@ -50,30 +50,67 @@ public class ReservationService {
         Instant start = request.getStartAt();
         Instant end = request.getEndAt();
 
-        validateReservationTimes(start, end);
+        SystemSettings settings =
+                systemSettingsService.getCurrentSettings();
 
-        //bloqueo pesimista
-        reservationRepository.findOverlappingForUpdate(
-                room.getId(), start, end
+        validateReservationTimes(start, end, settings);
+
+        // Estados que actualmente pueden bloquear el horario
+        List<ReservationStatus> blockingStatuses = List.of(
+                ReservationStatus.PAID,
+                ReservationStatus.PENDING
         );
 
-        //verificacion de cruce de horarios
+        // Bloqueo pesimista y búsqueda de reservas que se solapan
+        List<Reservation> overlappingReservations =
+                reservationRepository.findOverlappingForUpdate(
+                        room.getId(),
+                        start,
+                        end,
+                        blockingStatuses
+                );
 
-        boolean exists = reservationRepository.existsByRoomIdAndStartAtLessThanAndEndAtGreaterThan(
-                room.getId(), end, start
-        );
+        // Una reserva PENDING solamente bloquea mientras
+        // no haya superado su tiempo de expiración.
+        boolean exists = overlappingReservations.stream()
+                .anyMatch(reservation ->
+                        isBlockingReservation(
+                                reservation,
+                                settings
+                        )
+                );
 
         if (exists) {
             throw new ReservationConflictException(
                     ErrorCode.RESERVATION_OVERLAP.name(),
-                    "La sala ya está reservada en ese horario");
+                    "La sala ya está reservada en ese horario"
+            );
         }
 
-        // verificacion de reserva duplicada
-        if (reservationRepository.findByUserIdAndRoomIdAndStartAtAndEndAt(user.getId(), room.getId(), start, end).isPresent())
+        // verificar reserva duplicada
+        boolean duplicateReservation =
+                reservationRepository
+                        .findByUserIdAndRoomIdAndStartAtAndEndAtAndStatusIn(
+                                user.getId(),
+                                room.getId(),
+                                start,
+                                end,
+                                blockingStatuses
+                        )
+                        .filter(reservation ->
+                                isBlockingReservation(
+                                        reservation,
+                                        settings
+                                )
+                        )
+                        .isPresent();
+
+        if (duplicateReservation) {
             throw new ReservationConflictException(
                     ErrorCode.DUPLICATE_RESERVATION.name(),
-                    "Ya tienes una reserva igual");
+                    "Ya tienes una reserva igual"
+            );
+        }
 
         // . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
         //                     CALCULO DE PRECIO
@@ -112,9 +149,33 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
+    private boolean isBlockingReservation(
+            Reservation reservation,
+            SystemSettings settings
+    ) {
+        if (reservation.getStatus() == ReservationStatus.PAID) {
+            return true;
+        }
+
+        if (reservation.getStatus() == ReservationStatus.PENDING) {
+
+            Instant expirationTime = reservation.getCreatedAt()
+                    .plus(
+                            Duration.ofMinutes(
+                                    settings.getPendingExpirationMinutes()
+                            )
+                    );
+
+            return Instant.now(clock).isBefore(expirationTime);
+        }
+
+        return false;
+    }
+
     private void validateReservationTimes(
             Instant startAt,
-            Instant endAt
+            Instant endAt,
+            SystemSettings settings
     ) {
 
         Instant now = Instant.now(clock);
@@ -130,9 +191,6 @@ public class ReservationService {
                     "La hora de inicio debe ser anterior a la hora de finalización"
             );
         }
-
-        SystemSettings settings =
-                systemSettingsService.getCurrentSettings();
 
         ZoneId zoneId =
                 ZoneId.of("America/El_Salvador");
