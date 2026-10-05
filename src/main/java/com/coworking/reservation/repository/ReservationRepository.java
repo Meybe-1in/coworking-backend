@@ -84,6 +84,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, Instant createdAt);
 
+    // calendar
+    @Query("""
+            SELECT r
+            FROM Reservation r
+            WHERE r.status IN :statuses
+              AND r.startAt < :to
+              AND r.endAt > :from
+            ORDER BY r.startAt ASC
+            """)
+    List<Reservation> findCalendarReservations(
+            @Param("statuses") List<ReservationStatus> statuses,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
     //admin metricts
 
     long countByStatus(ReservationStatus status);
