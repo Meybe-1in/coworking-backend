@@ -276,13 +276,26 @@ public class ReservationService {
             Instant from,
             Instant to
     ) {
-        return reservationRepository
-                .findByStatusAndStartAtLessThanAndEndAtGreaterThan(
-                        ReservationStatus.PAID,
-                        to,
-                        from
+        SystemSettings settings =
+                systemSettingsService.getCurrentSettings();
+
+        List<Reservation> reservations =
+                reservationRepository.findCalendarReservations(
+                        List.of(
+                                ReservationStatus.PENDING,
+                                ReservationStatus.PAID
+                        ),
+                        from,
+                        to
+                );
+
+        return reservations.stream()
+                .filter(reservation ->
+                        isBlockingReservation(
+                                reservation,
+                                settings
+                        )
                 )
-                .stream()
                 .map(r -> new CalendarEventResponse(
                         r.getRoom().getName(),
                         r.getStartAt(),
