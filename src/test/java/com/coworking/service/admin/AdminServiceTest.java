@@ -3,6 +3,8 @@ package com.coworking.service.admin;
 import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.*;
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.admin.service.AdminServiceImpl;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
@@ -41,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,6 +71,9 @@ class AdminServiceTest {
 
     @Mock
     private AuditLogService auditLogService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -434,6 +438,15 @@ class AdminServiceTest {
                 "User",
                 1L
         );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.USER_BLOCKED,
+                        "Usuario bloqueado",
+                        "El usuario dayana ha sido bloqueado.",
+                        "User",
+                        1L
+                );
     }
 
     @Test

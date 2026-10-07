@@ -1,5 +1,7 @@
 package com.coworking.service.reservation;
 
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.admin.settings.entity.SystemSettings;
 import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.reservation.enums.ReservationStatus;
@@ -19,15 +21,20 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-class ReservationExpirationSchedulerTest {
+class ReservationExpirationSchedulerServiceTest {
 
     @Mock
     private ReservationRepository reservationRepository;
 
     @Mock
     private SystemSettingsService systemSettingsService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ReservationExpirationScheduler scheduler;
@@ -40,16 +47,20 @@ class ReservationExpirationSchedulerTest {
         MockitoAnnotations.openMocks(this);
 
         settings = new SystemSettings();
-
         settings.setOpeningTime(LocalTime.of(7, 0));
         settings.setClosingTime(LocalTime.of(20, 0));
         settings.setMaxReservationHours(8);
         settings.setPendingExpirationMinutes(15);
         settings.setInstitutionName("Coworking Platform");
 
+        scheduler = new ReservationExpirationScheduler(
+                reservationRepository,
+                systemSettingsService,
+                notificationService
+        );
+
         when(systemSettingsService.getCurrentSettings())
                 .thenReturn(settings);
-
     }
 
     @Test
@@ -58,12 +69,7 @@ class ReservationExpirationSchedulerTest {
         // Given
         settings.setPendingExpirationMinutes(15);
 
-        when(systemSettingsService.getCurrentSettings())
-                .thenReturn(settings);
-
-        Reservation reservation = new Reservation();
-        reservation.setId(1L);
-        reservation.setStatus(ReservationStatus.PENDING);
+        Reservation reservation = createPendingReservation(1L);
 
         when(reservationRepository.findByStatusAndCreatedAtBefore(
                 eq(ReservationStatus.PENDING),
@@ -87,6 +93,15 @@ class ReservationExpirationSchedulerTest {
                         eq(ReservationStatus.PENDING),
                         any(Instant.class)
                 );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.RESERVATION_EXPIRED,
+                        "Reserva expirada",
+                        "La reserva #1 ha expirado.",
+                        "Reservation",
+                        1L
+                );
     }
 
     @Test
@@ -94,9 +109,6 @@ class ReservationExpirationSchedulerTest {
 
         // Given
         settings.setPendingExpirationMinutes(30);
-
-        when(systemSettingsService.getCurrentSettings())
-                .thenReturn(settings);
 
         when(reservationRepository.findByStatusAndCreatedAtBefore(
                 eq(ReservationStatus.PENDING),
@@ -123,20 +135,9 @@ class ReservationExpirationSchedulerTest {
         // Given
         settings.setPendingExpirationMinutes(20);
 
-        when(systemSettingsService.getCurrentSettings())
-                .thenReturn(settings);
-
-        Reservation reservation1 = new Reservation();
-        reservation1.setId(1L);
-        reservation1.setStatus(ReservationStatus.PENDING);
-
-        Reservation reservation2 = new Reservation();
-        reservation2.setId(2L);
-        reservation2.setStatus(ReservationStatus.PENDING);
-
-        Reservation reservation3 = new Reservation();
-        reservation3.setId(3L);
-        reservation3.setStatus(ReservationStatus.PENDING);
+        Reservation reservation1 = createPendingReservation(1L);
+        Reservation reservation2 = createPendingReservation(2L);
+        Reservation reservation3 = createPendingReservation(3L);
 
         when(reservationRepository.findByStatusAndCreatedAtBefore(
                 eq(ReservationStatus.PENDING),
@@ -173,6 +174,33 @@ class ReservationExpirationSchedulerTest {
                         eq(ReservationStatus.PENDING),
                         any(Instant.class)
                 );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.RESERVATION_EXPIRED,
+                        "Reserva expirada",
+                        "La reserva #1 ha expirado.",
+                        "Reservation",
+                        1L
+                );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.RESERVATION_EXPIRED,
+                        "Reserva expirada",
+                        "La reserva #2 ha expirado.",
+                        "Reservation",
+                        2L
+                );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.RESERVATION_EXPIRED,
+                        "Reserva expirada",
+                        "La reserva #3 ha expirado.",
+                        "Reservation",
+                        3L
+                );
     }
 
     @Test
@@ -181,12 +209,7 @@ class ReservationExpirationSchedulerTest {
         // Given
         settings.setPendingExpirationMinutes(15);
 
-        when(systemSettingsService.getCurrentSettings())
-                .thenReturn(settings);
-
-        Reservation reservation = new Reservation();
-        reservation.setId(1L);
-        reservation.setStatus(ReservationStatus.PENDING);
+        Reservation reservation = createPendingReservation(1L);
 
         when(reservationRepository.findByStatusAndCreatedAtBefore(
                 eq(ReservationStatus.PENDING),
@@ -204,5 +227,44 @@ class ReservationExpirationSchedulerTest {
 
         verify(reservationRepository, never())
                 .save(any(Reservation.class));
+    }
+
+    @Test
+    void shouldCreateNotificationWhenReservationExpires() {
+
+        // Given
+        Reservation reservation = createPendingReservation(1L);
+
+        when(reservationRepository.findByStatusAndCreatedAtBefore(
+                eq(ReservationStatus.PENDING),
+                any(Instant.class)
+        )).thenReturn(List.of(reservation));
+
+        // When
+        scheduler.expiredPendingReservations();
+
+        // Then
+        assertEquals(
+                ReservationStatus.EXPIRED,
+                reservation.getStatus()
+        );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.RESERVATION_EXPIRED,
+                        "Reserva expirada",
+                        "La reserva #1 ha expirado.",
+                        "Reservation",
+                        1L
+                );
+    }
+
+    private Reservation createPendingReservation(Long id) {
+
+        Reservation reservation = new Reservation();
+        reservation.setId(id);
+        reservation.setStatus(ReservationStatus.PENDING);
+
+        return reservation;
     }
 }

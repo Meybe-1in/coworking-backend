@@ -1,5 +1,7 @@
 package com.coworking.payment.webhook;
 
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.payment.service.PaymentService;
 import com.coworking.reservation.service.ReservationService;
 import com.stripe.exception.EventDataObjectDeserializationException;
@@ -30,6 +32,7 @@ public class StripeWebhookController {
     private String webhookSecret;
 
     private final PaymentService paymentService;
+    private final NotificationService notificationService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeWebhook(HttpServletRequest request) {
@@ -61,6 +64,9 @@ public class StripeWebhookController {
                 case "payment_intent.succeeded":
                     handlePaymentIntentSucceeded(event);
                     break;
+                case "payment_intent.payment_failed":
+                    handlePaymentIntentFailed(event);
+                    break;
 
                 default:
                     log.warn("Evento no manejado: {}", event.getType());
@@ -70,6 +76,49 @@ public class StripeWebhookController {
         }
 
         return ResponseEntity.ok("Recibido");
+    }
+
+    private void handlePaymentIntentFailed(Event event) throws EventDataObjectDeserializationException {
+
+        EventDataObjectDeserializer dataObjectDeserializer =
+                event.getDataObjectDeserializer();
+
+        StripeObject stripeObject =
+                dataObjectDeserializer.getObject().orElse(null);
+
+        if (stripeObject == null) {
+            stripeObject = dataObjectDeserializer.deserializeUnsafe();
+        }
+
+        PaymentIntent paymentIntent = (PaymentIntent) stripeObject;
+
+        if (paymentIntent.getMetadata() == null
+                || !paymentIntent.getMetadata().containsKey("reservationId")) {
+
+            log.warn("PaymentIntent fallido sin reservationId en metadata");
+            return;
+        }
+
+        Long reservationId = Long.valueOf(
+                paymentIntent.getMetadata().get("reservationId")
+        );
+
+        String message = "El pago de la reserva #" +
+                reservationId +
+                " ha fallado.";
+
+        notificationService.createNotificationForAdmins(
+                NotificationType.PAYMENT_FAILED,
+                "Pago fallido",
+                message,
+                "Reservation",
+                reservationId
+        );
+
+        log.warn(
+                "Pago fallido para reservationId {}",
+                reservationId
+        );
     }
 
     private void handlePaymentIntentSucceeded(Event event) throws EventDataObjectDeserializationException {

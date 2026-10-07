@@ -69,27 +69,30 @@ public class NotificationService {
         return notificationRepository.countByAdminIdAndReadFalse(admin.getId());
     }
 
-    public Notification createNotification(
-            String adminEmail,
+    public void createNotificationForAdmins(
             NotificationType type,
             String title,
             String message,
             String entityType,
             Long entityId
     ) {
+        List<User> admins = userRepository.findByRoles_Name("ROLE_ADMIN");
 
-        User admin = getAdmin(adminEmail);
+        List<Notification> notifications = admins.stream()
+                .map(admin -> {
+                    Notification notification = new Notification();
+                    notification.setAdmin(admin);
+                    notification.setType(type);
+                    notification.setTitle(title);
+                    notification.setMessage(message);
+                    notification.setEntityType(entityType);
+                    notification.setEntityId(entityId);
+                    notification.setRead(false);
+                    return notification;
+                })
+                .toList();
 
-        Notification notification = new Notification();
-        notification.setAdmin(admin);
-        notification.setType(type);
-        notification.setTitle(title);
-        notification.setMessage(message);
-        notification.setEntityType(entityType);
-        notification.setEntityId(entityId);
-        notification.setRead(false);
-
-        return notificationRepository.save(notification);
+        notificationRepository.saveAll(notifications);
     }
 
     private User getAdmin(String adminEmail) {

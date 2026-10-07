@@ -3,6 +3,8 @@ package com.coworking.admin.service;
 import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.*;
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.exception.BadRequestException;
 import com.coworking.exception.NotFoundException;
 import com.coworking.payment.dto.PaymentResponse;
@@ -41,6 +43,7 @@ public class AdminServiceImpl implements AdminService {
     private final PasswordEncoder passwordEncoder;
     private final RoomRepository roomRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
     private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._-])[A-Za-z\\d@$!%*?&._-]{8,}$";
 
     // Obtiene todas las reservas y las transforma a DTO de respuesta
@@ -194,7 +197,15 @@ public class AdminServiceImpl implements AdminService {
                 user.getId()
         );
 
-
+        if (!request.getEnabled()) {
+            notificationService.createNotificationForAdmins(
+                    NotificationType.USER_BLOCKED,
+                    "Usuario bloqueado",
+                    "El usuario " + user.getUsername() + " ha sido bloqueado.",
+                    "User",
+                    user.getId()
+            );
+        }
         return mapToUserAdminResponse(user);
     }
 
