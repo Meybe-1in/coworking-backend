@@ -3,6 +3,8 @@ package com.coworking.room.service;
 import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.admin.settings.entity.SystemSettings;
 import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.exception.RoomHasReservationsException;
@@ -39,6 +41,7 @@ public class RoomService {
     private final StorageService storageService;
     private final AuditLogService auditLogService;
     private final SystemSettingsService systemSettingsService;
+    private final NotificationService notificationService;
     private final Clock clock;
     // MAPPERS
 
@@ -179,13 +182,23 @@ public class RoomService {
         try {
             roomRepository.deleteById(id);
             roomRepository.flush();
+
             auditLogService.log(
                     AuditAction.ROOM_DELETED,
                     "Room",
                     id
             );
 
+            notificationService.createNotificationForAdmins(
+                    NotificationType.ROOM_DELETED,
+                    "Sala eliminada",
+                    "La sala #" + id + " ha sido eliminada.",
+                    "Room",
+                    id
+            );
+
             return true;
+
         } catch (DataIntegrityViolationException ex) {
             throw new RoomHasReservationsException();
         }

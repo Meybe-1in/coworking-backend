@@ -1,5 +1,7 @@
 package com.coworking.controller.reservation;
 
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.admin.settings.entity.SystemSettings;
 import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.reservation.enums.ReservationStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,12 +34,16 @@ public class ReservationExpirationSchedulerTest {
     @Mock
     private SystemSettingsService systemSettingsService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private ReservationExpirationScheduler scheduler;
 
     @Test
     void shouldExpirePendingReservations() {
 
+        // Given
         SystemSettings settings = new SystemSettings();
 
         settings.setOpeningTime(LocalTime.of(7, 0));
@@ -49,26 +56,32 @@ public class ReservationExpirationSchedulerTest {
                 .thenReturn(settings);
 
         Reservation reservation = new Reservation();
-
         reservation.setId(1L);
         reservation.setStatus(ReservationStatus.PENDING);
-
         reservation.setCreatedAt(
                 Instant.now().minus(Duration.ofMinutes(20))
         );
 
-        when(reservationRepository
-                .findByStatusAndCreatedAtBefore(
-                        eq(ReservationStatus.PENDING),
-                        any()
-                ))
-                .thenReturn(List.of(reservation));
+        when(reservationRepository.findByStatusAndCreatedAtBefore(
+                eq(ReservationStatus.PENDING),
+                any(Instant.class)
+        )).thenReturn(List.of(reservation));
 
+        // When
         scheduler.expiredPendingReservations();
 
+        // Then
         assertEquals(
                 ReservationStatus.EXPIRED,
                 reservation.getStatus()
+        );
+
+        verify(notificationService).createNotificationForAdmins(
+                NotificationType.RESERVATION_EXPIRED,
+                "Reserva expirada",
+                "La reserva #1 ha expirado.",
+                "Reservation",
+                1L
         );
     }
 }

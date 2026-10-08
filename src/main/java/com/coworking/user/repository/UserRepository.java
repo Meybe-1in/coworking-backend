@@ -4,6 +4,7 @@ import com.coworking.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRoles_Name(String roleName);
     long countByEnabledTrue();
     long countByEnabledFalse();
+
+    List<User> findByRoles_Name(String roleName);
 }

@@ -3,6 +3,8 @@ package com.coworking.service.room;
 import com.coworking.admin.audit.enums.AuditAction;
 import com.coworking.admin.audit.service.AuditLogService;
 import com.coworking.admin.dto.AdminPageResponse;
+import com.coworking.admin.notification.enums.NotificationType;
+import com.coworking.admin.notification.service.NotificationService;
 import com.coworking.admin.settings.entity.SystemSettings;
 import com.coworking.admin.settings.service.SystemSettingsService;
 import com.coworking.exception.RoomHasReservationsException;
@@ -55,6 +57,9 @@ class RoomServiceTest {
 
     @Mock
     private SystemSettingsService systemSettingsService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Mock
     private Clock clock;
@@ -387,6 +392,15 @@ class RoomServiceTest {
                         "Room",
                         1L
                 );
+
+        verify(notificationService)
+                .createNotificationForAdmins(
+                        NotificationType.ROOM_DELETED,
+                        "Sala eliminada",
+                        "La sala #1 ha sido eliminada.",
+                        "Room",
+                        1L
+                );
     }
 
     @Test
@@ -409,6 +423,15 @@ class RoomServiceTest {
         verify(auditLogService, never())
                 .log(
                         any(AuditAction.class),
+                        anyString(),
+                        anyLong()
+                );
+
+        verify(notificationService, never())
+                .createNotificationForAdmins(
+                        any(),
+                        anyString(),
+                        anyString(),
                         anyString(),
                         anyLong()
                 );
@@ -440,6 +463,15 @@ class RoomServiceTest {
         verify(auditLogService, never())
                 .log(
                         any(AuditAction.class),
+                        anyString(),
+                        anyLong()
+                );
+
+        verify(notificationService, never())
+                .createNotificationForAdmins(
+                        any(),
+                        anyString(),
+                        anyString(),
                         anyString(),
                         anyLong()
                 );
