@@ -1,5 +1,6 @@
 package com.coworking.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -22,10 +24,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
 
@@ -34,13 +37,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authHeader.substring(7);
-        String email = jwtUtil.extractUsername(token); //subject = email
+        final String token = authHeader.substring(7).trim();
+        if (token.isBlank()) {
+            SecurityContextHolder.clearContext();
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Token JWT vacío"
+            );
+            return;
+        }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        try {
+            String email = jwtUtil.extractUsername(token); //subject = email
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            if (jwtUtil.isTokenValid(token, userDetails)){
+            if (email == null || email.isBlank()) {
+                SecurityContextHolder.clearContext();
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Token JWT inválido"
+                );
+                return;
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                if (!jwtUtil.isTokenValid(token, userDetails)) {
+                    SecurityContextHolder.clearContext();
+                    response.sendError(
+                            HttpServletResponse.SC_UNAUTHORIZED,
+                            "Token JWT inválido o expirado"
+                    );
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -54,6 +83,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+        } catch (
+                JwtException |
+                IllegalArgumentException |
+                UsernameNotFoundException ex
+        ) {
+            SecurityContextHolder.clearContext();
+
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Token JWT inválido o expirado"
+            );
+            return;
         }
         filterChain.doFilter(request, response);
     }

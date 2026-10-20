@@ -167,13 +167,20 @@ public class GoogleAuthService {
         String googleName = googleUser.getName();
 
         if (googleName == null || googleName.isBlank()) {
-            googleName = googleUser.getEmail()
-                    .substring(0, googleUser.getEmail().indexOf('@'));
+            String email = googleUser.getEmail().trim();
+            int atIndex = email.indexOf('@');
+
+            googleName = atIndex > 0
+                    ? email.substring(0, atIndex)
+                    : email;
         }
 
-        String username = googleName.trim()
-                + "-"
-                + UUID.randomUUID().toString().substring(0, 8);
+        String username = googleName.trim();
+
+        if (userRepository.existsByUsername(username)) {
+            username = username + "-"
+                    + UUID.randomUUID().toString().substring(0, 8);
+        }
 
         user.setUsername(username);
 
