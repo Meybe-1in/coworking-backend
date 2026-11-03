@@ -4,6 +4,7 @@ import com.coworking.security.AuthenticationEntryPointImpl;
 import com.coworking.security.JwtAuthenticationFilter;
 import com.coworking.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -31,16 +33,29 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
 
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOriginPatterns(List.of("http://localhost:5173"));
-                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+                    corsConfiguration.setAllowedOrigins(
+                            Arrays.stream(allowedOrigins.split(","))
+                                    .map(String::trim)
+                                    .filter(origin -> !origin.isEmpty())
+                                    .toList()
+                    );
+
+                    corsConfiguration.setAllowedMethods(
+                            List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                    );
                     corsConfiguration.setAllowedHeaders(List.of("*"));
                     corsConfiguration.setAllowCredentials(true);
+
                     return corsConfiguration;
                 }))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
