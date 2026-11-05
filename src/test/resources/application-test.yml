@@ -9,6 +9,9 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+  flyway:
+    enabled: false
+
   mail:
     host: smtp.gmail.com
     port: 587
