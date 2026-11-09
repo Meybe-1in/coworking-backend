@@ -4,55 +4,89 @@ import com.coworking.role.model.Role;
 import com.coworking.role.repository.RoleRepository;
 import com.coworking.user.model.User;
 import com.coworking.user.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 
-//@Profile("dev")
+@Slf4j
 @Component
-@RequiredArgsConstructor
+@Profile("docker")
 public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final String adminUsername;
+    private final String adminEmail;
+    private final String adminPassword;
+
+    public DataInitializer(
+            RoleRepository roleRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            @Value("${ADMIN_USERNAME:}") String adminUsername,
+            @Value("${ADMIN_EMAIL:}") String adminEmail,
+            @Value("${ADMIN_PASSWORD:}") String adminPassword
+    ) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.adminUsername = adminUsername;
+        this.adminEmail = adminEmail;
+        this.adminPassword = adminPassword;
+    }
 
     @Override
-    public void run(String... args) throws Exception {
-        if (roleRepository.findByName("ROLE_USER").isEmpty()){
-            roleRepository.save(new Role("ROLE_USER"));
+    @Transactional
+    public void run(String... args) {
+        validateAdminConfiguration();
+
+        // No crear ni modificar cuentas que ya existan.
+        boolean usernameExists = userRepository.existsByUsername(adminUsername);
+        boolean emailExists = userRepository.existsByEmail(adminEmail);
+
+        if (usernameExists || emailExists) {
+            log.warn(
+                    "No se creó el administrador local porque el username o email ya está registrado."
+            );
+            return;
         }
-        if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
-            roleRepository.save(new Role("ROLE_ADMIN"));
-        }
 
-        // CREAR ADMIN POR DEFECTO
-        if (userRepository.findByUsername("admin").isEmpty()
-        ) {
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "ROLE_ADMIN no existe. Verifica que Flyway haya ejecutado las migraciones."
+                        )
+                );
 
-            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                    .orElseThrow(() -> new RuntimeException("ROLE_ADMIN no encontrado"));
+        User admin = new User();
+        admin.setUsername(adminUsername);
+        admin.setEmail(adminEmail);
+        admin.setPassword(passwordEncoder.encode(adminPassword));
+        admin.setEnabled(true);
+        admin.setEmailVerified(true);
+        admin.setRoles(Set.of(adminRole));
 
+        userRepository.save(admin);
 
-            User admin = new User();
+        log.info("Administrador local creado correctamente.");
+    }
 
-            admin.setUsername("admin");
-            admin.setEmail("admin@coworking.com");
-            admin.setPassword(passwordEncoder.encode("Admin123*"));
-            admin.setEnabled(true);
-            admin.setEmailVerified(true);
-            admin.setCreatedAt(LocalDateTime.now());
-            admin.setRoles(Set.of(adminRole));
-
-            userRepository.save(admin);
-
-            System.out.println("ADMIN POR DEFECTO CREADO");
+    private void validateAdminConfiguration() {
+        if (adminUsername == null || adminUsername.isBlank()
+                || adminEmail == null || adminEmail.isBlank()
+                || adminPassword == null || adminPassword.isBlank()) {
+            throw new IllegalStateException(
+                    "Faltan variables de entorno para inicializar el administrador local: "
+                            + "ADMIN_USERNAME, ADMIN_EMAIL y ADMIN_PASSWORD."
+            );
         }
     }
 }
