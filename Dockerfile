@@ -8,6 +8,10 @@ WORKDIR /app
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
+
+# Dar permisos de ejecución al Maven Wrapper
+RUN chmod +x mvnw
+
 RUN ./mvnw dependency:go-offline
 
 COPY src src
