@@ -1,0 +1,47 @@
+
+spring:
+  jackson:
+    time-zone: UTC
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:uploads}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  currency: ${STRIPE_CURRENCY:usd}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
+supabase:
+  url: ${SUPABASE_URL}
+  bucket: ${SUPABASE_BUCKET}
+  api-key: ${SUPABASE_API_KEY}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
