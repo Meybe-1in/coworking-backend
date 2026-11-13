@@ -18,7 +18,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/rooms")
-@CrossOrigin(origins = "http://localhost:5173")
 @Tag(name = "Rooms", description = "Gestion de salas de coworking")
 @AllArgsConstructor
 public class RoomController {
