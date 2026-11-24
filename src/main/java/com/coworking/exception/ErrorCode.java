@@ -13,5 +13,8 @@ public enum ErrorCode {
     BAD_REQUEST,
     UNAUTHORIZED,
     INTERNAL_ERROR,
-    CONFLICT;
+    CONFLICT,
+
+    // Almacenamiento
+    STORAGE_ERROR
 }
