@@ -1,5 +1,9 @@
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${STORAGE_MAX_FILE_SIZE:5MB}
+      max-request-size: ${STORAGE_MAX_REQUEST_SIZE:6MB}
   jackson:
     time-zone: UTC
   jpa:
@@ -43,5 +47,7 @@ supabase:
   api-key: ${SUPABASE_API_KEY}
 
 app:
+  storage:
+    max-file-size: ${STORAGE_MAX_FILE_SIZE:5MB}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
