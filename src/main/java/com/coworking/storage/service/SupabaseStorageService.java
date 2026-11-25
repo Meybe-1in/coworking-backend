@@ -1,111 +1,140 @@
 package com.coworking.storage.service;
 
 import com.coworking.config.SupabaseConfig;
+import com.coworking.storage.exception.InvalidStorageFileException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 import com.coworking.storage.exception.StorageException;
 
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
-
 
 @Service
 @Primary
 @RequiredArgsConstructor
 public class SupabaseStorageService implements StorageService {
 
-
     private final SupabaseConfig config;
-
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    private static final Set<String> ALLOWED_TYPES = Set.of(
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-    );
+    @Value("${app.storage.max-file-size:5MB}")
+    private DataSize maxFileSize;
 
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final Map<String, String> ALLOWED_TYPES = Map.of(
+            "image/jpeg", "jpg",
+            "image/png", "png",
+            "image/webp", "webp"
+    );
 
     @Override
     public String upload(MultipartFile file) {
-        // Validar el archivo
-        if (file == null || file.isEmpty()) {
-            throw new StorageException("El archivo está vacío");
-        }
 
-        if (!ALLOWED_TYPES.contains(file.getContentType())) {
-            throw new StorageException(
-                    "Tipo de archivo no permitido: "
-                            + file.getContentType()
-            );
-        }
+        validateFile(file);
 
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new StorageException(
-                    "La imagen supera el tamaño máximo permitido de 5 MB"
-            );
-        }
+        String contentType = file.getContentType();
+        String extension = ALLOWED_TYPES.get(contentType);
 
-        // Subir el archivo a Supabase
+        String filename = UUID.randomUUID() + "." + extension;
+
         try {
-            String original = file.getOriginalFilename();
-            // Obtener la extensión del archivo
-            String extension = "";
 
-            if (original != null && original.contains(".")) {
-                extension = original.substring(original.lastIndexOf("."));
-            }
+            String baseUrl = config.getUrl().replaceAll("/+$", "");
 
-            String filename = UUID.randomUUID() + extension;
-
-            String uploadUrl = config.getUrl()
+            String uploadUrl = baseUrl
                     + "/storage/v1/object/"
                     + config.getBucket()
                     + "/"
                     + filename;
 
-            // Construir la solicitud PUT
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(uploadUrl))
-                    .header("Authorization", "Bearer " + config.getApiKey())
-                    .header("Content-Type", file.getContentType())
-                    .PUT(HttpRequest.BodyPublishers.ofByteArray(file.getBytes()))
+                    .header(
+                            "Authorization",
+                            "Bearer " + config.getApiKey()
+                    )
+                    .header("Content-Type", contentType)
+                    .PUT(
+                            HttpRequest.BodyPublishers.ofByteArray(
+                                    file.getBytes()
+                            )
+                    )
                     .build();
 
+            HttpResponse<String> response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
 
-            HttpResponse<String> response =
-                    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200
+                    || response.statusCode() >= 300) {
 
-
-            if (response.statusCode() >= 400) {
                 throw new StorageException(
-                        "Error subiendo archivo a Supabase: "
-                                + response.body()
+                        "Supabase rechazó la subida de la imagen. "
+                                + "Código HTTP: " + response.statusCode()
                 );
             }
 
-
-            return config.getUrl()
+            return baseUrl
                     + "/storage/v1/object/public/"
                     + config.getBucket()
                     + "/"
                     + filename;
 
+        } catch (InterruptedException e) {
 
-        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+
             throw new StorageException(
-                    "Error al subir imagen a Supabase", e
+                    "La subida de la imagen fue interrumpida",
+                    e
+            );
+
+        } catch (IOException e) {
+
+            throw new StorageException(
+                    "No fue posible enviar la imagen a Supabase",
+                    e
             );
         }
     }
 
+    private void validateFile(MultipartFile file) {
+
+        if (file == null || file.isEmpty()) {
+            throw new InvalidStorageFileException(
+                    "Debes seleccionar una imagen"
+            );
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null
+                || !ALLOWED_TYPES.containsKey(contentType)) {
+
+            throw new InvalidStorageFileException(
+                    "Formato de imagen no permitido. "
+                            + "Solo se acepta JPG, PNG o WEBP"
+            );
+        }
+
+        if (file.getSize() > maxFileSize.toBytes()) {
+
+            throw new InvalidStorageFileException(
+                    "La imagen supera el tamaño máximo permitido de "
+                            + maxFileSize.toMegabytes()
+                            + " MB"
+            );
+        }
+    }
 }
